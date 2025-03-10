@@ -1,0 +1,329 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Property, propertyService } from "@/lib/services/property.service"
+import Navigation from "@/components/navigation"
+import { useAuth } from "@/contexts/auth-context"
+
+const propertyFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  type: z.string().min(1, "Property type is required"),
+  price: z.coerce.number().min(1, "Price is required"),
+  bedrooms: z.coerce.number().min(1, "Number of bedrooms is required"),
+  bathrooms: z.coerce.number().min(1, "Number of bathrooms is required"),
+  area: z.coerce.number().min(1, "Area is required"),
+  location: z.string().min(1, "Location is required"),
+  image: z.string().min(1, "Image URL is required"),
+})
+
+type PropertyFormValues = z.infer<typeof propertyFormSchema>
+
+export default function EditPropertyPage() {
+  const params = useParams()
+  const router = useRouter()
+  const { user, loading } = useAuth()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [property, setProperty] = useState<Property | null>(null)
+
+  const form = useForm<PropertyFormValues>({
+    resolver: zodResolver(propertyFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      type: "",
+      price: 0,
+      bedrooms: 0,
+      bathrooms: 0,
+      area: 0,
+      location: "",
+      image: "",
+    },
+  })
+
+  useEffect(() => {
+    const fetchProperty = async () => {
+      try {
+        const propertyId = params.id as string
+        const data = await propertyService.getPropertyById(propertyId)
+        
+        if (!data) {
+          setError("Property not found")
+          return
+        }
+
+        // Check if the user owns this property
+        if (data.userId !== user?.uid) {
+          router.push("/dashboard")
+          return
+        }
+
+        setProperty(data)
+        
+        // Set form values
+        form.reset({
+          title: data.title,
+          description: data.description || "",
+          type: data.type,
+          price: data.price,
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          area: data.area,
+          location: data.location,
+          image: data.image || "",
+        })
+      } catch (err) {
+        setError("Failed to fetch property details")
+        console.error("Error fetching property:", err)
+      }
+    }
+
+    if (user) {
+      fetchProperty()
+    }
+  }, [params.id, user, form, router])
+
+  const onSubmit = async (data: PropertyFormValues) => {
+    if (!user || !property) {
+      setError("You must be logged in to edit a property listing")
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      setError(null)
+
+      await propertyService.updateProperty(property.id!, {
+        ...data,
+        userId: user.uid,
+      })
+
+      router.push("/dashboard")
+    } catch (error: any) {
+      console.error("Error updating property:", error)
+      setError(error.message || "Failed to update property listing")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    router.push("/login")
+    return null
+  }
+
+  return (
+    <div className="min-h-screen">
+      <Navigation />
+      <main className="container px-4 py-8 md:px-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold">Edit Property</h1>
+            <p className="text-muted-foreground">Update your property listing details.</p>
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
+              {error}
+            </div>
+          )}
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-8">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Property Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Modern Apartment in Downtown" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe your property..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Property Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select property type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="house">House</SelectItem>
+                          <SelectItem value="apartment">Apartment</SelectItem>
+                          <SelectItem value="condo">Condo</SelectItem>
+                          <SelectItem value="townhouse">Townhouse</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ny">New York</SelectItem>
+                          <SelectItem value="ca">California</SelectItem>
+                          <SelectItem value="fl">Florida</SelectItem>
+                          <SelectItem value="tx">Texas</SelectItem>
+                          <SelectItem value="il">Illinois</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Enter price" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="bedrooms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bedrooms</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Number of bedrooms" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bathrooms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bathrooms</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Number of bathrooms" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="area"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Area (sqft)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Total area" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Right-click on an image and select 'Copy image address'" {...field} />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Tip: Upload your image to a hosting service, then paste the direct image URL here
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-4">
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? "Updating..." : "Update Property"}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </main>
+    </div>
+  )
+} 
