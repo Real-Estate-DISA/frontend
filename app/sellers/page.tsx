@@ -35,6 +35,9 @@ export default function SellersPage() {
   const { user, loading, userRole } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [predictedPrice, setPredictedPrice] = useState<number | null>(null)
+  const [isPredicting, setIsPredicting] = useState(false)
+  const [hasPrediction, setHasPrediction] = useState(false)
 
   // Check authentication and role
   useEffect(() => {
@@ -65,9 +68,49 @@ export default function SellersPage() {
     },
   })
 
+  const predictPrice = async (data: PropertyFormValues) => {
+    try {
+      setIsPredicting(true)
+      setError(null)
+      const response = await fetch('http://localhost:5000/api/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          area: data.area,
+          location: data.location,
+          property_type: data.type
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get price prediction')
+      }
+
+      const result = await response.json()
+      setPredictedPrice(result.predicted_price)
+      setHasPrediction(true)
+      return result.predicted_price
+    } catch (error: any) {
+      console.error('Error predicting price:', error)
+      setError('Failed to get price prediction')
+      return null
+    } finally {
+      setIsPredicting(false)
+    }
+  }
+
   const onSubmit = async (data: PropertyFormValues) => {
     if (!user) {
       setError("You must be logged in to create a property listing")
+      return
+    }
+
+    if (!predictedPrice) {
+      setError("Please get a price prediction first")
       return
     }
 
@@ -80,6 +123,7 @@ export default function SellersPage() {
         featured: false,
         createdAt: new Date(),
         userId: user.uid,
+        predictedPrice: predictedPrice,
       })
 
       router.push("/dashboard")
@@ -204,19 +248,33 @@ export default function SellersPage() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Enter price" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your Price</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Enter your price" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormItem>
+                  <FormLabel>Predicted Price</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="Click Predict Price to get prediction" 
+                      value={predictedPrice || ''} 
+                      disabled 
+                    />
+                  </FormControl>
+                </FormItem>
+              </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <FormField
@@ -279,9 +337,26 @@ export default function SellersPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Creating Listing..." : "Create Listing"}
-              </Button>
+              <div className="flex gap-4">
+                <Button 
+                  type="button"
+                  onClick={() => predictPrice(form.getValues())}
+                  disabled={isPredicting || !form.formState.isValid}
+                  className="flex-1"
+                >
+                  {isPredicting ? "Predicting..." : "Predict Price"}
+                </Button>
+
+                {hasPrediction && (
+                  <Button 
+                    type="submit" 
+                    className="flex-1" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Creating Listing..." : "Create Listing"}
+                  </Button>
+                )}
+              </div>
             </form>
           </Form>
         </div>

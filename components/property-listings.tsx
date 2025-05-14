@@ -206,6 +206,11 @@ export default function PropertyListings({ filters, onUpdateCount }: PropertyLis
                     <span className="line-clamp-1">{listing.location}</span>
                   </div>
                   <p className="font-bold text-xl">${listing.price.toLocaleString()}</p>
+                  {listing.predictedPrice && (
+                    <p className="text-sm text-muted-foreground">
+                      Predicted: ${listing.predictedPrice.toLocaleString()}
+                    </p>
+                  )}
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center">
                       <Bed className="h-4 w-4 mr-1" />
@@ -228,11 +233,37 @@ export default function PropertyListings({ filters, onUpdateCount }: PropertyLis
                     View Details
                   </Button>
                 </Link>
-                <Link href={`/contact-seller/${listing.id}`} className="flex-1">
-                  <Button variant="outline" className="w-full">
-                    Contact Seller
-                  </Button>
-                </Link>
+                {userId === listing.userId ? (
+                  <>
+                    <Link href={`/properties/${listing.id}/edit`} className="flex-1">
+                      <Button variant="outline" className="w-full">
+                        Edit
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="destructive" 
+                      className="flex-1"
+                      onClick={async () => {
+                        if (listing.id && window.confirm('Are you sure you want to delete this property?')) {
+                          try {
+                            await propertyService.deleteProperty(listing.id)
+                            setListings(listings.filter(p => p.id !== listing.id))
+                          } catch (error) {
+                            console.error('Error deleting property:', error)
+                          }
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </>
+                ) : (
+                  <Link href={`/contact-seller/${listing.id}`} className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      Contact Seller
+                    </Button>
+                  </Link>
+                )}
               </CardFooter>
             </Card>
           ))}

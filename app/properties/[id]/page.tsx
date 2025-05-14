@@ -1,15 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { Bath, Bed, Calendar, Heart, MapPin, Maximize } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { Bath, Bed, Calendar, Heart, MapPin, Maximize, Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Property, propertyService } from "@/lib/services/property.service"
 import Navigation from "@/components/navigation"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function PropertyDetailsPage() {
   const params = useParams()
+  const router = useRouter()
+  const { user } = useAuth()
   const [property, setProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +111,11 @@ export default function PropertyDetailsPage() {
 
             <div>
               <h2 className="text-2xl font-bold">${property.price.toLocaleString()}</h2>
+              {property.predictedPrice && (
+                <p className="text-muted-foreground">
+                  Predicted Price: ${property.predictedPrice.toLocaleString()}
+                </p>
+              )}
             </div>
 
             <div>
@@ -121,12 +129,46 @@ export default function PropertyDetailsPage() {
             </div>
 
             <div className="flex gap-4">
-              <Button className="flex-1" size="lg">
-                Contact Seller
-              </Button>
-              <Button variant="outline" className="flex-1" size="lg">
-                Schedule Viewing
-              </Button>
+              {user?.uid === property.userId ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    size="lg"
+                    onClick={() => router.push(`/properties/${property.id}/edit`)}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Property
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    className="flex-1" 
+                    size="lg"
+                    onClick={async () => {
+                      if (window.confirm('Are you sure you want to delete this property?')) {
+                        try {
+                          await propertyService.deleteProperty(property.id!)
+                          router.push('/dashboard')
+                        } catch (error) {
+                          console.error('Error deleting property:', error)
+                        }
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Property
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button className="flex-1" size="lg">
+                    Contact Seller
+                  </Button>
+                  <Button variant="outline" className="flex-1" size="lg">
+                    Schedule Viewing
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

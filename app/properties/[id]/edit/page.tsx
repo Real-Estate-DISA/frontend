@@ -32,10 +32,13 @@ type PropertyFormValues = z.infer<typeof propertyFormSchema>
 export default function EditPropertyPage() {
   const params = useParams()
   const router = useRouter()
-  const { user, loading } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
   const [property, setProperty] = useState<Property | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isPredicting, setIsPredicting] = useState(false)
+  const [predictedPrice, setPredictedPrice] = useState<number | null>(null)
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
@@ -55,21 +58,22 @@ export default function EditPropertyPage() {
   useEffect(() => {
     const fetchProperty = async () => {
       try {
+        setLoading(true)
+        setError(null)
         const propertyId = params.id as string
         const data = await propertyService.getPropertyById(propertyId)
         
         if (!data) {
-          setError("Property not found")
-          return
+          throw new Error("Property not found")
         }
 
-        // Check if the user owns this property
         if (data.userId !== user?.uid) {
           router.push("/dashboard")
           return
         }
 
         setProperty(data)
+        setPredictedPrice(data.predictedPrice || null)
         
         // Set form values
         form.reset({
@@ -81,22 +85,63 @@ export default function EditPropertyPage() {
           bathrooms: data.bathrooms,
           area: data.area,
           location: data.location,
-          image: data.image || "",
+          image: data.image,
         })
       } catch (err) {
-        setError("Failed to fetch property details")
+        setError("Failed to fetch property details. Please try again later.")
         console.error("Error fetching property:", err)
+      } finally {
+        setLoading(false)
       }
     }
 
     if (user) {
       fetchProperty()
     }
-  }, [params.id, user, form, router])
+  }, [params.id, user, form])
+
+  const predictPrice = async (data: PropertyFormValues) => {
+    try {
+      setIsPredicting(true)
+      setError(null)
+      const response = await fetch('http://localhost:5000/api/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          area: data.area,
+          location: data.location,
+          property_type: data.type
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get price prediction')
+      }
+
+      const result = await response.json()
+      setPredictedPrice(result.predicted_price)
+      return result.predicted_price
+    } catch (error: any) {
+      console.error('Error predicting price:', error)
+      setError('Failed to get price prediction')
+      return null
+    } finally {
+      setIsPredicting(false)
+    }
+  }
 
   const onSubmit = async (data: PropertyFormValues) => {
     if (!user || !property) {
-      setError("You must be logged in to edit a property listing")
+      setError("You must be logged in to edit a property")
+      return
+    }
+
+    if (!predictedPrice) {
+      setError("Please get a price prediction first")
       return
     }
 
@@ -106,13 +151,13 @@ export default function EditPropertyPage() {
 
       await propertyService.updateProperty(property.id!, {
         ...data,
-        userId: user.uid,
+        predictedPrice,
       })
 
-      router.push("/dashboard")
+      router.push(`/properties/${property.id}`)
     } catch (error: any) {
       console.error("Error updating property:", error)
-      setError(error.message || "Failed to update property listing")
+      setError(error.message || "Failed to update property")
     } finally {
       setIsSubmitting(false)
     }
@@ -120,15 +165,24 @@ export default function EditPropertyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container px-4 py-8 md:px-6">
+          <div className="text-center">Loading property details...</div>
+        </div>
       </div>
     )
   }
 
-  if (!user) {
-    router.push("/login")
-    return null
+  if (error || !property) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="container px-4 py-8 md:px-6">
+          <div className="text-center text-red-500">{error || "Property not found"}</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -138,7 +192,7 @@ export default function EditPropertyPage() {
         <div className="max-w-2xl mx-auto">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold">Edit Property</h1>
-            <p className="text-muted-foreground">Update your property listing details.</p>
+            <p className="text-muted-foreground">Update your property details below.</p>
           </div>
 
           {error && (
@@ -232,19 +286,33 @@ export default function EditPropertyPage() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Enter price" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your Price</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="Enter your price" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormItem>
+                  <FormLabel>Predicted Price</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="Click Predict Price to get prediction" 
+                      value={predictedPrice || ''} 
+                      disabled 
+                    />
+                  </FormControl>
+                </FormItem>
+              </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <FormField
@@ -308,16 +376,21 @@ export default function EditPropertyPage() {
               />
 
               <div className="flex gap-4">
-                <Button type="submit" className="flex-1" disabled={isSubmitting}>
-                  {isSubmitting ? "Updating..." : "Update Property"}
-                </Button>
                 <Button 
-                  type="button" 
-                  variant="outline" 
+                  type="button"
+                  onClick={() => predictPrice(form.getValues())}
+                  disabled={isPredicting || !form.formState.isValid}
                   className="flex-1"
-                  onClick={() => router.push("/dashboard")}
                 >
-                  Cancel
+                  {isPredicting ? "Predicting..." : "Predict Price"}
+                </Button>
+
+                <Button 
+                  type="submit" 
+                  className="flex-1" 
+                  disabled={isSubmitting || !predictedPrice}
+                >
+                  {isSubmitting ? "Updating..." : "Update Property"}
                 </Button>
               </div>
             </form>

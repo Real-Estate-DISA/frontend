@@ -15,6 +15,7 @@ export interface Property {
   createdAt: Date
   userId: string
   description?: string
+  predictedPrice?: number
 }
 
 export interface PropertyFilter {
