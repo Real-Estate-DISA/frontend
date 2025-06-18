@@ -1,10 +1,24 @@
 import { collection, query, where, getDocs, addDoc, getDoc, doc, updateDoc, deleteDoc, CollectionReference, Query, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 
+export interface LocationFeature {
+  name: string
+  distance: number
+  rating?: number
+  vicinity: string
+}
+
+export interface LocationFeatures {
+  hospitals: LocationFeature[]
+  schools: LocationFeature[]
+  metro_stations: LocationFeature[]
+}
+
 export interface Property {
   id?: string
   title: string
   location: string
+  address: string
   price: number
   bedrooms: number
   bathrooms: number
@@ -16,6 +30,7 @@ export interface Property {
   userId: string
   description?: string
   predictedPrice?: number
+  locationFeatures?: LocationFeatures
 }
 
 export interface PropertyFilter {

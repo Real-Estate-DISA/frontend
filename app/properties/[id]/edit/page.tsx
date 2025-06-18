@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Property, propertyService } from "@/lib/services/property.service"
+import { Property, propertyService, LocationFeatures } from "@/lib/services/property.service"
 import Navigation from "@/components/navigation"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -24,6 +24,7 @@ const propertyFormSchema = z.object({
   bathrooms: z.coerce.number().min(1, "Number of bathrooms is required"),
   area: z.coerce.number().min(1, "Area is required"),
   location: z.string().min(1, "Location is required"),
+  address: z.string().min(1, "Address is required"),
   image: z.string().min(1, "Image URL is required"),
 })
 
@@ -39,6 +40,7 @@ export default function EditPropertyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPredicting, setIsPredicting] = useState(false)
   const [predictedPrice, setPredictedPrice] = useState<number | null>(null)
+  const [locationFeatures, setLocationFeatures] = useState<LocationFeatures | null>(null)
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
@@ -51,6 +53,7 @@ export default function EditPropertyPage() {
       bathrooms: 0,
       area: 0,
       location: "",
+      address: "",
       image: "",
     },
   })
@@ -85,6 +88,7 @@ export default function EditPropertyPage() {
           bathrooms: data.bathrooms,
           area: data.area,
           location: data.location,
+          address: data.address || "",
           image: data.image,
         })
       } catch (err) {
@@ -114,7 +118,8 @@ export default function EditPropertyPage() {
           bathrooms: data.bathrooms,
           area: data.area,
           location: data.location,
-          property_type: data.type
+          property_type: data.type,
+          address: data.address
         }),
       })
 
@@ -124,6 +129,7 @@ export default function EditPropertyPage() {
 
       const result = await response.json()
       setPredictedPrice(result.predicted_price)
+      setLocationFeatures(result.location_features)
       return result.predicted_price
     } catch (error: any) {
       console.error('Error predicting price:', error)
@@ -135,12 +141,12 @@ export default function EditPropertyPage() {
   }
 
   const onSubmit = async (data: PropertyFormValues) => {
-    if (!user || !property) {
-      setError("You must be logged in to edit a property")
+    if (!user) {
+      setError("You must be logged in to update a property listing")
       return
     }
 
-    if (!predictedPrice) {
+    if (!predictedPrice || !locationFeatures) {
       setError("Please get a price prediction first")
       return
     }
@@ -149,15 +155,16 @@ export default function EditPropertyPage() {
       setIsSubmitting(true)
       setError(null)
 
-      await propertyService.updateProperty(property.id!, {
+      await propertyService.updateProperty(property!.id!, {
         ...data,
         predictedPrice,
+        locationFeatures
       })
 
-      router.push(`/properties/${property.id}`)
+      router.push("/dashboard")
     } catch (error: any) {
       console.error("Error updating property:", error)
-      setError(error.message || "Failed to update property")
+      setError(error.message || "Failed to update property listing")
     } finally {
       setIsSubmitting(false)
     }
@@ -280,6 +287,25 @@ export default function EditPropertyPage() {
                           <SelectItem value="il">Illinois</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter complete street address" {...field} />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Enter the complete street address for accurate location
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

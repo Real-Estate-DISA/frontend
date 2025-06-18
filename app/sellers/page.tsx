@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { propertyService } from "@/lib/services/property.service"
+import { propertyService, Property, LocationFeatures } from "@/lib/services/property.service"
 import { userService } from "@/lib/services/user.service"
 import Navigation from "@/components/navigation"
 import { useAuth } from "@/contexts/auth-context"
@@ -25,6 +25,7 @@ const propertyFormSchema = z.object({
   bathrooms: z.coerce.number().min(1, "Number of bathrooms is required"),
   area: z.coerce.number().min(1, "Area is required"),
   location: z.string().min(1, "Location is required"),
+  address: z.string().min(1, "Address is required"),
   image: z.string().min(1, "Image URL is required"),
 })
 
@@ -38,6 +39,7 @@ export default function SellersPage() {
   const [predictedPrice, setPredictedPrice] = useState<number | null>(null)
   const [isPredicting, setIsPredicting] = useState(false)
   const [hasPrediction, setHasPrediction] = useState(false)
+  const [locationFeatures, setLocationFeatures] = useState<LocationFeatures | null>(null)
 
   // Check authentication and role
   useEffect(() => {
@@ -64,6 +66,7 @@ export default function SellersPage() {
       bathrooms: 0,
       area: 0,
       location: "",
+      address: "",
       image: "",
     },
   })
@@ -82,7 +85,8 @@ export default function SellersPage() {
           bathrooms: data.bathrooms,
           area: data.area,
           location: data.location,
-          property_type: data.type
+          property_type: data.type,
+          address: data.address
         }),
       })
 
@@ -92,6 +96,7 @@ export default function SellersPage() {
 
       const result = await response.json()
       setPredictedPrice(result.predicted_price)
+      setLocationFeatures(result.location_features)
       setHasPrediction(true)
       return result.predicted_price
     } catch (error: any) {
@@ -109,7 +114,7 @@ export default function SellersPage() {
       return
     }
 
-    if (!predictedPrice) {
+    if (!predictedPrice || !locationFeatures) {
       setError("Please get a price prediction first")
       return
     }
@@ -123,7 +128,8 @@ export default function SellersPage() {
         featured: false,
         createdAt: new Date(),
         userId: user.uid,
-        predictedPrice: predictedPrice,
+        predictedPrice,
+        locationFeatures
       })
 
       router.push("/dashboard")
@@ -242,6 +248,25 @@ export default function SellersPage() {
                           <SelectItem value="il">Illinois</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter complete street address" {...field} />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Enter the complete street address for accurate location
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

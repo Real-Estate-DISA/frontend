@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Bath, Bed, Calendar, Heart, MapPin, Maximize, Pencil, Trash2 } from "lucide-react"
+import { Bath, Bed, Calendar, Heart, MapPin, Maximize, Pencil, Trash2, Hospital, School, Train } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Property, propertyService } from "@/lib/services/property.service"
@@ -122,6 +122,81 @@ export default function PropertyDetailsPage() {
               <h3 className="font-medium mb-2">Description</h3>
               <p className="text-muted-foreground">{property.description || "No description available."}</p>
             </div>
+
+            {property.locationFeatures && (
+              <div className="space-y-4">
+                <h3 className="font-medium">Nearby Amenities</h3>
+                
+                {property.locationFeatures.hospitals.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Hospital className="h-5 w-5 text-muted-foreground" />
+                      <h4 className="font-medium">Hospitals</h4>
+                    </div>
+                    <div className="grid gap-2">
+                      {property.locationFeatures.hospitals.map((hospital, index) => (
+                        <div key={index} className="text-sm bg-muted/50 p-2 rounded-md">
+                          <p className="font-medium">{hospital.name}</p>
+                          <p className="text-muted-foreground">{hospital.vicinity}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span>{hospital.distance}m away</span>
+                            {hospital.rating && (
+                              <span className="text-yellow-500">★ {hospital.rating}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {property.locationFeatures.schools.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <School className="h-5 w-5 text-muted-foreground" />
+                      <h4 className="font-medium">Schools</h4>
+                    </div>
+                    <div className="grid gap-2">
+                      {property.locationFeatures.schools.map((school, index) => (
+                        <div key={index} className="text-sm bg-muted/50 p-2 rounded-md">
+                          <p className="font-medium">{school.name}</p>
+                          <p className="text-muted-foreground">{school.vicinity}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span>{school.distance}m away</span>
+                            {school.rating && (
+                              <span className="text-yellow-500">★ {school.rating}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {property.locationFeatures.metro_stations.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Train className="h-5 w-5 text-muted-foreground" />
+                      <h4 className="font-medium">Metro Stations</h4>
+                    </div>
+                    <div className="grid gap-2">
+                      {property.locationFeatures.metro_stations.map((station, index) => (
+                        <div key={index} className="text-sm bg-muted/50 p-2 rounded-md">
+                          <p className="font-medium">{station.name}</p>
+                          <p className="text-muted-foreground">{station.vicinity}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span>{station.distance}m away</span>
+                            {station.rating && (
+                              <span className="text-yellow-500">★ {station.rating}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex items-center text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 mr-1" />
