@@ -824,17 +824,17 @@ export default function SellersPage() {
                       value={formData.propertyType}
                       onValueChange={(value) => handleInputChange("propertyType", value)}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select property type" />
-                      </SelectTrigger>
-                      <SelectContent>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select property type" />
+                          </SelectTrigger>
+                        <SelectContent>
                         {propertyTypes.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
                           </SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                        </SelectContent>
+                      </Select>
                   </div>
 
                   {/* City Selection */}
@@ -844,17 +844,17 @@ export default function SellersPage() {
                       value={formData.city}
                       onValueChange={(value) => handleInputChange("city", value)}
                     >
-                      <SelectTrigger>
+                          <SelectTrigger>
                         <SelectValue placeholder="Select city" />
-                      </SelectTrigger>
-                      <SelectContent>
+                          </SelectTrigger>
+                        <SelectContent>
                         {cities.map((city) => (
                           <SelectItem key={city} value={city}>
                             {city.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
                           </SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                        </SelectContent>
+                      </Select>
                   </div>
 
                   {/* Property Type Specific Fields */}
@@ -922,7 +922,7 @@ export default function SellersPage() {
                         />
                       </div>
                     </div>
-                  </div>
+              </div>
 
                   {/* Location Information */}
                   <Separator />
@@ -963,8 +963,8 @@ export default function SellersPage() {
                           value={formData.nearest_train_distance || ""}
                           onChange={(e) => handleInputChange("nearest_train_distance", parseFloat(e.target.value) || 0)}
                           placeholder="e.g., 5.0"
-                        />
-                      </div>
+                />
+              </div>
                       <div>
                         <Label htmlFor="nearest_airport_distance">Nearest Airport Distance (km)</Label>
                         <Input
@@ -978,9 +978,9 @@ export default function SellersPage() {
                       </div>
                       <div>
                         <Label htmlFor="nearest_hospital_distance">Nearest Hospital Distance (km)</Label>
-                        <Input
+                    <Input 
                           id="nearest_hospital_distance"
-                          type="number"
+                      type="number" 
                           step="0.1"
                           value={formData.nearest_hospital_distance || ""}
                           onChange={(e) => handleInputChange("nearest_hospital_distance", parseFloat(e.target.value) || 0)}
@@ -1027,8 +1027,8 @@ export default function SellersPage() {
                           Upload multiple images of your property (min 3, max 10 images). 
                           Our AI will analyze these images along with your property details for accurate price prediction.
                         </p>
-                      </div>
-                      
+              </div>
+
                       {formData.images.length > 0 && (
                         <div className="mt-4">
                           <Label>Selected Images ({formData.images.length})</Label>
@@ -1212,7 +1212,7 @@ export default function SellersPage() {
                           <DollarSign className="h-5 w-5 text-blue-600" />
                           <span className="font-semibold text-blue-800">Predicted Price: ₹{predictedPrice.toLocaleString()}</span>
                         </div>
-                      </div>
+              </div>
 
                       <div>
                         <Label htmlFor="images">Property Images</Label>
@@ -1232,10 +1232,10 @@ export default function SellersPage() {
                       <div className="flex gap-4 justify-center">
                         <Button variant="outline" onClick={() => setActiveTab("prediction")}>
                           Back to Prediction
-                        </Button>
-                        <Button 
+                </Button>
+                  <Button 
                           onClick={uploadProperty}
-                          disabled={isSubmitting}
+                    disabled={isSubmitting}
                           className="flex items-center gap-2"
                         >
                           {isSubmitting ? (
@@ -1263,7 +1263,7 @@ export default function SellersPage() {
                         </p>
                         <Button onClick={() => setActiveTab("prediction")}>
                           Get Price Prediction
-                        </Button>
+                  </Button>
                       </div>
                     </div>
                   )}

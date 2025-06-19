@@ -31,6 +31,53 @@ export interface Property {
   description?: string
   predictedPrice?: number
   locationFeatures?: LocationFeatures
+  propertyDetails?: {
+    // Common fields
+    city: string
+    total_weekly_hours: number
+    days_open_per_week: number
+    has_different_timings: boolean
+    weekday_opening_time: string
+    weekday_closing_time: string
+    
+    // Location fields
+    nearest_metro_distance: number
+    nearest_bus_distance: number
+    nearest_train_distance: number
+    nearest_airport_distance: number
+    nearest_hospital_distance: number
+    
+    // Coworking specific fields
+    total_center_area?: number
+    total_seating_capacity?: number
+    typical_floorplate_area?: number
+    building_type_business_park?: boolean
+    building_type_independent_commercial_tower?: boolean
+    
+    // Office rent specific fields
+    floor_size?: number
+    lock_in?: number
+    floors?: number
+    building_grade?: number
+    year_built?: number
+    furnishing_fully_furnished?: boolean
+    furnishing_unfurnished?: boolean
+    building_type_business_tower?: boolean
+    building_type_it_ites?: boolean
+    building_type_independent_commercial_tower_office?: boolean
+    
+    // Contact information
+    contact_number: string
+    email: string
+    
+    // All amenities
+    amenities: {
+      [key: string]: boolean
+    }
+    
+    // Images
+    images: string[]
+  }
 }
 
 export interface PropertyFilter {

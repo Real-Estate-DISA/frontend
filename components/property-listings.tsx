@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Bath, Bed, Heart, MapPin, Maximize } from "lucide-react"
+import { Bath, Bed, Heart, MapPin, Maximize, Users, Building2, Clock, Wifi } from "lucide-react"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -205,26 +205,71 @@ export default function PropertyListings({ filters, onUpdateCount }: PropertyLis
                     <MapPin className="h-4 w-4 mr-1" />
                     <span className="line-clamp-1">{listing.location}</span>
                   </div>
-                  <p className="font-bold text-xl">${listing.price.toLocaleString()}</p>
+                  <p className="font-bold text-xl">₹{listing.price.toLocaleString()}/month</p>
                   {listing.predictedPrice && (
                     <p className="text-sm text-muted-foreground">
-                      Predicted: ${listing.predictedPrice.toLocaleString()}
+                      AI Predicted: ₹{listing.predictedPrice.toLocaleString()}/month
                     </p>
                   )}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center">
-                      <Bed className="h-4 w-4 mr-1" />
-                      <span>{listing.bedrooms} Beds</span>
+                  
+                  {/* Property Type Specific Information */}
+                  {listing.type && (listing.type.includes('coworking') || listing.type === 'dedicated_desk' || listing.type === 'private_cabin' || listing.type === 'managed_office') ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-1" />
+                        <span>{listing.propertyDetails?.total_seating_capacity || 'N/A'} Seats</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Building2 className="h-4 w-4 mr-1" />
+                        <span>{listing.propertyDetails?.total_center_area?.toLocaleString() || listing.area.toLocaleString()} sqft</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>{listing.propertyDetails?.total_weekly_hours || 'N/A'} hrs/week</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <Bath className="h-4 w-4 mr-1" />
-                      <span>{listing.bathrooms} Baths</span>
+                  ) : listing.type === 'office_rent' ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center">
+                        <Building2 className="h-4 w-4 mr-1" />
+                        <span>{listing.propertyDetails?.floor_size?.toLocaleString() || listing.area.toLocaleString()} sqft</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Maximize className="h-4 w-4 mr-1" />
+                        <span>{listing.propertyDetails?.floors || 'N/A'} Floors</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>{listing.propertyDetails?.lock_in || 'N/A'} months</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <Maximize className="h-4 w-4 mr-1" />
-                      <span>{listing.area} sqft</span>
+                  ) : (
+                    // Fallback for other property types
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center">
+                        <Bed className="h-4 w-4 mr-1" />
+                        <span>{listing.bedrooms} Beds</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Bath className="h-4 w-4 mr-1" />
+                        <span>{listing.bathrooms} Baths</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Maximize className="h-4 w-4 mr-1" />
+                        <span>{listing.area} sqft</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  
+                  {/* Show key amenities */}
+                  {listing.propertyDetails?.amenities && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {listing.propertyDetails.amenities.wifi && <Wifi className="h-3 w-3" />}
+                      {listing.propertyDetails.amenities.air_conditioners && <span>AC</span>}
+                      {listing.propertyDetails.amenities.power_backup && <span>Power Backup</span>}
+                      {listing.propertyDetails.amenities.security_personnel && <span>Security</span>}
+                    </div>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="p-4 pt-0 flex gap-2">
