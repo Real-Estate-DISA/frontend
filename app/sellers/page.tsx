@@ -396,18 +396,15 @@ export default function SellersPage() {
     try {
       const data = prepareDataForAPI()
       const endpoint = formData.propertyType.startsWith("coworking") 
-        ? "/api/predict/coworking" 
-        : "/api/predict/office-rent"
+        ? "/predict/coworking" 
+        : "/predict/office_rent"
 
       const response = await fetch(`http://localhost:5000${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          data: data,
-          image: null // We'll add image support later
-        }),
+        body: JSON.stringify(data), // Send data directly, not wrapped in {data: data}
       })
 
       if (!response.ok) {
@@ -415,12 +412,32 @@ export default function SellersPage() {
       }
 
       const result = await response.json()
-      setPredictedPrice(result.predicted_price)
       
-      toast({
-        title: "Price Prediction Successful",
-        description: `Predicted price: ₹${result.predicted_price.toLocaleString()}`,
-      })
+      // Handle different response structures
+      let predictedPrice = null
+      if (formData.propertyType.startsWith("coworking")) {
+        // For coworking, get the first available prediction
+        const predictions = result.predictions
+        if (predictions && Object.keys(predictions).length > 0) {
+          const firstPrediction = Object.values(predictions)[0] as any
+          predictedPrice = firstPrediction.predicted_price
+        }
+      } else {
+        // For office rent
+        predictedPrice = result.prediction?.predicted_rent
+      }
+      
+      if (predictedPrice) {
+        setPredictedPrice(predictedPrice)
+        setHasPrediction(true)
+        
+        toast({
+          title: "Price Prediction Successful",
+          description: `Predicted price: ₹${predictedPrice.toLocaleString()}`,
+        })
+      } else {
+        throw new Error("No prediction received")
+      }
     } catch (error) {
       console.error("Prediction error:", error)
       toast({
