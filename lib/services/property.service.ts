@@ -102,6 +102,8 @@ export interface PropertyFilter {
 export const propertyService = {
   async getProperties(filters?: PropertyFilter) {
     try {
+      console.log('🔍 Fetching properties with filters:', filters)
+      
       let q: CollectionReference | Query = collection(db, 'properties')
       const constraints = []
 
@@ -111,22 +113,18 @@ export const propertyService = {
           constraints.push(where('userId', '==', filters.userId))
         }
 
-        // Handle type filter
+        // Handle type filter - only apply if no other complex filters
         if (filters.type && filters.type !== 'all') {
-          constraints.push(where('type', '==', filters.type))
-        }
-
-        // Handle price range
-        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-          if (filters.minPrice !== undefined) {
-            constraints.push(where('price', '>=', filters.minPrice))
-          }
-          if (filters.maxPrice !== undefined) {
-            constraints.push(where('price', '<=', filters.maxPrice))
+          // Only apply type filter if we don't have price range filters to avoid composite index issues
+          if (filters.minPrice === undefined && filters.maxPrice === undefined) {
+            constraints.push(where('type', '==', filters.type))
+            console.log('✅ Applied type filter in query:', filters.type)
+          } else {
+            console.log('⚠️ Type filter will be applied in memory due to price filters')
           }
         }
 
-        // Handle location
+        // Handle location filter
         if (filters.location && filters.location !== 'any') {
           constraints.push(where('location', '==', filters.location))
         }
@@ -135,17 +133,58 @@ export const propertyService = {
       // Apply the base query with filters
       if (constraints.length > 0) {
         q = query(q, ...constraints)
+        console.log('🔧 Applied constraints:', constraints.length)
+      } else {
+        console.log('📋 No constraints applied, fetching all properties')
       }
 
       const querySnapshot = await getDocs(q)
-      let properties = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date() // Convert Firestore Timestamp to Date
-      })) as Property[]
+      console.log('📊 Raw query result count:', querySnapshot.docs.length)
+      
+      let properties = querySnapshot.docs.map(doc => {
+        const data = doc.data()
+        console.log('📄 Raw document data for ID', doc.id, ':', data)
+        
+        const mappedProperty = {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date() // Convert Firestore Timestamp to Date
+        }
+        
+        console.log('🔄 Mapped property:', mappedProperty)
+        return mappedProperty
+      }) as Property[]
+
+      console.log('🔄 Properties after mapping:', properties.length)
+      console.log('📝 Sample property:', properties[0] ? {
+        id: properties[0].id,
+        title: properties[0].title,
+        type: properties[0].type,
+        price: properties[0].price,
+        location: properties[0].location
+      } : 'No properties found')
 
       // Apply additional filters in memory
       if (filters) {
+        // Handle type filter in memory if not applied in query
+        if (filters.type && filters.type !== 'all' && (filters.minPrice !== undefined || filters.maxPrice !== undefined)) {
+          const beforeCount = properties.length
+          properties = properties.filter(p => p.type === filters.type)
+          console.log(`🎯 Type filter in memory: ${beforeCount} → ${properties.length} properties`)
+        }
+
+        // Handle price range filtering in memory
+        if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+          const beforeCount = properties.length
+          if (filters.minPrice !== undefined) {
+            properties = properties.filter(p => p.price >= filters.minPrice!)
+          }
+          if (filters.maxPrice !== undefined) {
+            properties = properties.filter(p => p.price <= filters.maxPrice!)
+          }
+          console.log(`💰 Price filter in memory: ${beforeCount} → ${properties.length} properties`)
+        }
+
         // Filter by bedrooms if specified
         if (filters.bedrooms && filters.bedrooms !== 'any') {
           const bedroomCount = parseInt(filters.bedrooms)
@@ -169,9 +208,10 @@ export const propertyService = {
         }
       }
 
+      console.log('✅ Final properties count:', properties.length)
       return properties
     } catch (error) {
-      console.error('Error fetching properties:', error)
+      console.error('❌ Error fetching properties:', error)
       throw error
     }
   },

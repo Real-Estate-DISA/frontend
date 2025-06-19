@@ -14,10 +14,30 @@ import Navigation from "@/components/navigation"
 
 // Property types for our real estate platform
 const propertyTypes = [
-  { value: "dedicated_desk", label: "Dedicated Desk", icon: Users, description: "Personal workspace in shared environment" },
-  { value: "private_cabin", label: "Private Cabin", icon: Building2, description: "Enclosed private office space" },
-  { value: "managed_office", label: "Managed Office", icon: Briefcase, description: "Fully serviced office solutions" },
-  { value: "office_rent", label: "Office Rent", icon: Home, description: "Commercial office space for rent" }
+  {
+    value: "coworking_dedicated_desk",
+    label: "Dedicated Desk",
+    description: "Personal workspace in shared environment",
+    icon: Users
+  },
+  {
+    value: "coworking_private_cabin", 
+    label: "Private Cabin",
+    description: "Enclosed private office space",
+    icon: Building2
+  },
+  {
+    value: "coworking_managed_office",
+    label: "Managed Office", 
+    description: "Fully managed office solutions",
+    icon: Briefcase
+  },
+  {
+    value: "office_rent",
+    label: "Office Rent",
+    description: "Traditional office spaces",
+    icon: Home
+  }
 ]
 
 // Cities from our ML models
@@ -122,7 +142,7 @@ export default function PropertiesPage() {
   }
 
   const isCoworkingType = (type: string) => {
-    return ["dedicated_desk", "private_cabin", "managed_office"].includes(type)
+    return ["coworking_dedicated_desk", "coworking_private_cabin", "coworking_managed_office"].includes(type)
   }
 
   const isOfficeRentType = (type: string) => {
