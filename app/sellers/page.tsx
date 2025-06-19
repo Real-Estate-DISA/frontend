@@ -443,11 +443,140 @@ export default function SellersPage() {
       return
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to upload a property",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      // Here you would typically upload to your database
-      // For now, we'll simulate the upload
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Upload images to Firebase Storage first
+      const imageUrls: string[] = []
+      
+      if (formData.images.length > 0) {
+        for (const image of formData.images) {
+          const imageUrl = await uploadImageToStorage(image)
+          imageUrls.push(imageUrl)
+        }
+      }
+
+      // Prepare property data for Firestore
+      const propertyData = {
+        title: `${formData.propertyType.replace('_', ' ').toUpperCase()} - ${formData.city}`,
+        location: formData.city,
+        address: `${formData.city}, India`,
+        price: predictedPrice,
+        bedrooms: 0, // Not applicable for coworking/office spaces
+        bathrooms: 1, // Default value
+        area: formData.total_center_area || formData.floor_size || 1000,
+        image: imageUrls[0] || "/placeholder.svg",
+        type: formData.propertyType,
+        featured: false,
+        userId: user.uid,
+        description: formData.description || `Premium ${formData.propertyType.replace('_', ' ')} space in ${formData.city}`,
+        predictedPrice: predictedPrice,
+        createdAt: new Date(),
+        
+        // Additional coworking/office specific data
+        propertyDetails: {
+          // Common fields
+          city: formData.city,
+          total_weekly_hours: formData.total_weekly_hours,
+          days_open_per_week: formData.days_open_per_week,
+          has_different_timings: formData.has_different_timings,
+          weekday_opening_time: formData.weekday_opening_time,
+          weekday_closing_time: formData.weekday_closing_time,
+          
+          // Location fields
+          nearest_metro_distance: formData.nearest_metro_distance,
+          nearest_bus_distance: formData.nearest_bus_distance,
+          nearest_train_distance: formData.nearest_train_distance,
+          nearest_airport_distance: formData.nearest_airport_distance,
+          nearest_hospital_distance: formData.nearest_hospital_distance,
+          
+          // Coworking specific fields
+          total_center_area: formData.total_center_area,
+          total_seating_capacity: formData.total_seating_capacity,
+          typical_floorplate_area: formData.typical_floorplate_area,
+          building_type_business_park: formData.building_type_business_park,
+          building_type_independent_commercial_tower: formData.building_type_independent_commercial_tower,
+          
+          // Office rent specific fields
+          floor_size: formData.floor_size,
+          lock_in: formData.lock_in,
+          floors: formData.floors,
+          building_grade: formData.building_grade,
+          year_built: formData.year_built,
+          furnishing_fully_furnished: formData.furnishing_fully_furnished,
+          furnishing_unfurnished: formData.furnishing_unfurnished,
+          building_type_business_tower: formData.building_type_business_tower,
+          building_type_it_ites: formData.building_type_it_ites,
+          building_type_independent_commercial_tower_office: formData.building_type_independent_commercial_tower_office,
+          
+          // Contact information
+          contact_number: formData.contact_number,
+          email: formData.email,
+          
+          // All amenities
+          amenities: {
+            "2_wheeler_parking": formData["2_wheeler_parking"],
+            "4_wheeler_parking": formData["4_wheeler_parking"],
+            "air_conditioners": formData.air_conditioners,
+            "air_filters": formData.air_filters,
+            "breakout_recreational_area": formData.breakout_recreational_area,
+            "bus": formData.bus,
+            "cafeteria": formData.cafeteria,
+            "chairs_desks": formData.chairs_desks,
+            "charging": formData.charging,
+            "coffee": formData.coffee,
+            "conference_room": formData.conference_room,
+            "event_space": formData.event_space,
+            "fire_extinguisher": formData.fire_extinguisher,
+            "first_aid_kit": formData.first_aid_kit,
+            "fitness_centre": formData.fitness_centre,
+            "indoor_plants": formData.indoor_plants,
+            "lan": formData.lan,
+            "library": formData.library,
+            "lift": formData.lift,
+            "lounge_area": formData.lounge_area,
+            "lunch": formData.lunch,
+            "meeting_rooms": formData.meeting_rooms,
+            "metro_connectivity": formData.metro_connectivity,
+            "nearby_eateries": formData.nearby_eateries,
+            "outdoor_seating": formData.outdoor_seating,
+            "pantry_area": formData.pantry_area,
+            "pet_friendly": formData.pet_friendly,
+            "phone_booth": formData.phone_booth,
+            "power_backup": formData.power_backup,
+            "printer": formData.printer,
+            "rental_cycles_evs": formData.rental_cycles_evs,
+            "security_personnel": formData.security_personnel,
+            "separate_washroom": formData.separate_washroom,
+            "shuttle": formData.shuttle,
+            "single_washroom": formData.single_washroom,
+            "smoke_alarms": formData.smoke_alarms,
+            "snacks_drinks": formData.snacks_drinks,
+            "stationery": formData.stationery,
+            "storage_space": formData.storage_space,
+            "tea": formData.tea,
+            "training_room": formData.training_room,
+            "washroom_near_premise": formData.washroom_near_premise,
+            "water": formData.water,
+            "wellness_centre": formData.wellness_centre,
+            "wifi": formData.wifi,
+          },
+          
+          // Images
+          images: imageUrls,
+        }
+      }
+
+      // Save to Firestore
+      const propertyId = await propertyService.createProperty(propertyData)
       
       toast({
         title: "Property Uploaded Successfully",
@@ -457,7 +586,12 @@ export default function SellersPage() {
       // Reset form
       setFormData(initialFormData)
       setPredictedPrice(null)
+      setHasPrediction(false)
+      
+      // Redirect to success page
+      router.push("/sellers/success")
     } catch (error) {
+      console.error("Upload error:", error)
       toast({
         title: "Upload Failed",
         description: "Failed to upload property. Please try again.",
@@ -465,6 +599,23 @@ export default function SellersPage() {
       })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // Helper function to upload images to Firebase Storage
+  const uploadImageToStorage = async (file: File): Promise<string> => {
+    try {
+      const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage')
+      const { storage } = await import('@/lib/firebase')
+      
+      const storageRef = ref(storage, `properties/${Date.now()}_${file.name}`)
+      const snapshot = await uploadBytes(storageRef, file)
+      const downloadURL = await getDownloadURL(snapshot.ref)
+      
+      return downloadURL
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      throw new Error("Failed to upload image")
     }
   }
 

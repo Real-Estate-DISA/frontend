@@ -134,7 +134,8 @@ export default function PropertiesPage() {
       <Navigation />
       <main className="flex-1">
         <div className="container px-4 py-8 md:px-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {/* Header Section */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tighter">Browse Properties</h1>
               <p className="text-muted-foreground">
@@ -165,17 +166,21 @@ export default function PropertiesPage() {
           </div>
 
           {/* Property Type Tabs */}
-          <div className="mt-8">
+          <div className="mb-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto">
                 {propertyTypes.map((type) => {
                   const Icon = type.icon
                   return (
-                    <TabsTrigger key={type.value} value={type.value} className="flex flex-col items-center gap-2 py-4">
+                    <TabsTrigger 
+                      key={type.value} 
+                      value={type.value} 
+                      className="flex flex-col items-center gap-2 py-6 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
                       <Icon className="h-5 w-5" />
                       <div className="text-center">
-                        <div className="font-medium">{type.label}</div>
-                        <div className="text-xs text-muted-foreground hidden sm:block">{type.description}</div>
+                        <div className="font-medium text-sm lg:text-base">{type.label}</div>
+                        <div className="text-xs text-muted-foreground hidden lg:block mt-1">{type.description}</div>
                       </div>
                     </TabsTrigger>
                   )
@@ -184,13 +189,191 @@ export default function PropertiesPage() {
             </Tabs>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 mt-8 lg:grid-cols-4">
-            <div
-              className={`lg:col-span-1 ${
-                showFilters ? "block" : "hidden lg:block"
-              } transition-all duration-200 ease-in-out`}
-            >
-              <div className="sticky top-4 space-y-6 rounded-lg border p-4">
+          {/* Mobile Filter Toggle */}
+          {showFilters && (
+            <div className="lg:hidden mb-6">
+              <div className="rounded-lg border p-4 bg-background">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="mb-2 font-medium">Location</h3>
+                    <Select
+                      value={filters.location}
+                      onValueChange={(value) => handleFilterChange("location", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">Any Location</SelectItem>
+                        {cities.map((city) => (
+                          <SelectItem key={city} value={city}>{city}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <h3 className="mb-2 font-medium">Price Range (₹/month)</h3>
+                    <Slider
+                      value={priceRange}
+                      onValueChange={handlePriceRangeChange}
+                      max={200000}
+                      step={5000}
+                      className="mt-4"
+                    />
+                    <div className="flex items-center justify-between text-sm mt-2">
+                      <span>₹{priceRange[0].toLocaleString()}</span>
+                      <span>{priceRange[0] === 200000 ? "₹2L+" : `₹${priceRange[0].toLocaleString()}`}</span>
+                    </div>
+                  </div>
+
+                  {/* Coworking Specific Filters */}
+                  {isCoworkingType(activeTab) && (
+                    <>
+                      <div>
+                        <h3 className="mb-2 font-medium">Seating Capacity</h3>
+                        <Select
+                          value={filters.seating_capacity}
+                          onValueChange={(value) => handleFilterChange("seating_capacity", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select capacity" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="50">50+</SelectItem>
+                            <SelectItem value="100">100+</SelectItem>
+                            <SelectItem value="200">200+</SelectItem>
+                            <SelectItem value="500">500+</SelectItem>
+                            <SelectItem value="1000">1000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <h3 className="mb-2 font-medium">Center Area (sq ft)</h3>
+                        <Select
+                          value={filters.center_area}
+                          onValueChange={(value) => handleFilterChange("center_area", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select area" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="5000">5,000+</SelectItem>
+                            <SelectItem value="10000">10,000+</SelectItem>
+                            <SelectItem value="20000">20,000+</SelectItem>
+                            <SelectItem value="50000">50,000+</SelectItem>
+                            <SelectItem value="100000">1,00,000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <h3 className="mb-2 font-medium">Weekly Hours</h3>
+                        <Select
+                          value={filters.weekly_hours}
+                          onValueChange={(value) => handleFilterChange("weekly_hours", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select hours" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="40">40+ hours</SelectItem>
+                            <SelectItem value="50">50+ hours</SelectItem>
+                            <SelectItem value="60">60+ hours</SelectItem>
+                            <SelectItem value="70">70+ hours</SelectItem>
+                            <SelectItem value="80">80+ hours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Office Rent Specific Filters */}
+                  {isOfficeRentType(activeTab) && (
+                    <>
+                      <div>
+                        <h3 className="mb-2 font-medium">Floor Size (sq ft)</h3>
+                        <Select
+                          value={filters.floor_size}
+                          onValueChange={(value) => handleFilterChange("floor_size", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select floor size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="500">500+</SelectItem>
+                            <SelectItem value="1000">1,000+</SelectItem>
+                            <SelectItem value="2000">2,000+</SelectItem>
+                            <SelectItem value="5000">5,000+</SelectItem>
+                            <SelectItem value="10000">10,000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <h3 className="mb-2 font-medium">Building Grade</h3>
+                        <Select
+                          value={filters.building_grade}
+                          onValueChange={(value) => handleFilterChange("building_grade", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select grade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="1">Grade A</SelectItem>
+                            <SelectItem value="2">Grade B</SelectItem>
+                            <SelectItem value="3">Grade C</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <h3 className="mb-2 font-medium">Furnishing</h3>
+                        <Select
+                          value={filters.furnishing}
+                          onValueChange={(value) => handleFilterChange("furnishing", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select furnishing" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="furnished">Furnished</SelectItem>
+                            <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button className="flex-1" onClick={handleApplyFilters}>
+                      Apply Filters
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={handleResetFilters}>
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Layout */}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+            {/* Desktop Filters Sidebar */}
+            <div className="hidden lg:block lg:col-span-1">
+              <div className="sticky top-4 space-y-6 rounded-lg border p-6 bg-background">
+                <div>
+                  <h3 className="mb-3 font-semibold text-lg">Filters</h3>
+                </div>
+                
                 <div>
                   <h3 className="mb-2 font-medium">Location</h3>
                   <div className="space-y-2">
@@ -365,7 +548,7 @@ export default function PropertiesPage() {
                   </>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-4">
                   <Button className="flex-1" onClick={handleApplyFilters}>
                     Apply Filters
                   </Button>
@@ -376,7 +559,8 @@ export default function PropertiesPage() {
               </div>
             </div>
 
-            <div className={`${showFilters ? "hidden lg:block" : ""} lg:col-span-3`}>
+            {/* Property Listings */}
+            <div className="lg:col-span-3">
               <PropertyListings filters={appliedFilters} onUpdateCount={setPropertyCount} />
             </div>
           </div>

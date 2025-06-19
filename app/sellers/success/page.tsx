@@ -15,7 +15,7 @@ export default function SuccessPage() {
           </div>
           <h1 className="text-2xl font-bold mb-4">Property Listed Successfully!</h1>
           <p className="text-muted-foreground mb-8">
-            Your property has been successfully listed on PropertyConnect. Potential buyers will be able to view your
+            Your workspace has been successfully listed on ALPS. Potential tenants will be able to view your
             listing and contact you for more information.
           </p>
           <div className="space-y-4">
