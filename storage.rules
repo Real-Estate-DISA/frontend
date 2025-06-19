@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to upload property images
+    match /properties/{imageId} {
+      allow read: if true;  // Anyone can read property images
+      allow write: if request.auth != null;  // Only authenticated users can upload
+    }
+    
+    // Allow authenticated users to upload profile images
+    match /profiles/{userId}/{imageId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Default rule - deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 
