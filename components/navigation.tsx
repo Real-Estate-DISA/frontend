@@ -38,7 +38,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center gap-2">
               <Building className="h-6 w-6" />
-              <span className="text-xl font-bold">PropertyConnect</span>
+              <span className="text-xl font-bold">ALPS</span>
             </div>
           </Link>
         </div>

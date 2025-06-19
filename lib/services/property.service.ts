@@ -42,6 +42,14 @@ export interface PropertyFilter {
   location?: string
   searchTerm?: string
   userId?: string
+  // Coworking specific filters
+  seating_capacity?: string
+  center_area?: string
+  weekly_hours?: string
+  // Office rent specific filters
+  floor_size?: string
+  building_grade?: string
+  furnishing?: string
 }
 
 export const propertyService = {

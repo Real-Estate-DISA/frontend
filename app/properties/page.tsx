@@ -1,30 +1,58 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Filter, Search } from "lucide-react"
+import { Filter, Search, Building2, Users, Home, Briefcase } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PropertyListings from "@/components/property-listings"
 import { PropertyFilter } from "@/lib/services/property.service"
 import Navigation from "@/components/navigation"
 
+// Property types for our real estate platform
+const propertyTypes = [
+  { value: "dedicated_desk", label: "Dedicated Desk", icon: Users, description: "Personal workspace in shared environment" },
+  { value: "private_cabin", label: "Private Cabin", icon: Building2, description: "Enclosed private office space" },
+  { value: "managed_office", label: "Managed Office", icon: Briefcase, description: "Fully serviced office solutions" },
+  { value: "office_rent", label: "Office Rent", icon: Home, description: "Commercial office space for rent" }
+]
+
+// Cities from our ML models
+const cities = [
+  "Noida", "New Delhi", "Gurgaon", "Bangalore", "Ahmedabad", 
+  "Chennai", "Hyderabad", "Mumbai", "Pune"
+]
+
 export default function PropertiesPage() {
+  const [activeTab, setActiveTab] = useState("dedicated_desk")
   const [filters, setFilters] = useState<PropertyFilter>({
-    type: "all",
+    type: "dedicated_desk",
     minPrice: 0,
     maxPrice: undefined,
-    bedrooms: "any",
-    bathrooms: "any",
     location: "any",
     searchTerm: "",
+    // Coworking specific filters
+    seating_capacity: "any",
+    center_area: "any",
+    weekly_hours: "any",
+    // Office rent specific filters
+    floor_size: "any",
+    building_grade: "any",
+    furnishing: "any"
   })
   const [appliedFilters, setAppliedFilters] = useState<PropertyFilter>(filters)
   const [showFilters, setShowFilters] = useState(false)
   const [propertyCount, setPropertyCount] = useState(0)
   const [priceRange, setPriceRange] = useState([0])
+
+  // Update filters when tab changes
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, type: activeTab }))
+    setAppliedFilters(prev => ({ ...prev, type: activeTab }))
+  }, [activeTab])
 
   // Debug effect to log filter changes
   useEffect(() => {
@@ -76,17 +104,29 @@ export default function PropertiesPage() {
 
   const handleResetFilters = () => {
     const defaultFilters = {
-      type: "all",
+      type: activeTab,
       minPrice: undefined,
       maxPrice: undefined,
-      bedrooms: "any",
-      bathrooms: "any",
       location: "any",
       searchTerm: filters.searchTerm, // Preserve search term
+      seating_capacity: "any",
+      center_area: "any",
+      weekly_hours: "any",
+      floor_size: "any",
+      building_grade: "any",
+      furnishing: "any"
     }
     setPriceRange([0])
     setFilters(defaultFilters)
     setAppliedFilters(defaultFilters)
+  }
+
+  const isCoworkingType = (type: string) => {
+    return ["dedicated_desk", "private_cabin", "managed_office"].includes(type)
+  }
+
+  const isOfficeRentType = (type: string) => {
+    return type === "office_rent"
   }
 
   return (
@@ -124,6 +164,26 @@ export default function PropertiesPage() {
             </div>
           </div>
 
+          {/* Property Type Tabs */}
+          <div className="mt-8">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                {propertyTypes.map((type) => {
+                  const Icon = type.icon
+                  return (
+                    <TabsTrigger key={type.value} value={type.value} className="flex flex-col items-center gap-2 py-4">
+                      <Icon className="h-5 w-5" />
+                      <div className="text-center">
+                        <div className="font-medium">{type.label}</div>
+                        <div className="text-xs text-muted-foreground hidden sm:block">{type.description}</div>
+                      </div>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </Tabs>
+          </div>
+
           <div className="grid grid-cols-1 gap-6 mt-8 lg:grid-cols-4">
             <div
               className={`lg:col-span-1 ${
@@ -131,84 +191,6 @@ export default function PropertiesPage() {
               } transition-all duration-200 ease-in-out`}
             >
               <div className="sticky top-4 space-y-6 rounded-lg border p-4">
-                <div>
-                  <h3 className="mb-2 font-medium">Property Type</h3>
-                  <div className="space-y-2">
-                    <Select value={filters.type} onValueChange={(value) => handleFilterChange("type", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select property type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Properties</SelectItem>
-                        <SelectItem value="house">House</SelectItem>
-                        <SelectItem value="apartment">Apartment</SelectItem>
-                        <SelectItem value="condo">Condo</SelectItem>
-                        <SelectItem value="townhouse">Townhouse</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 font-medium">Price Range</h3>
-                  <div className="space-y-4">
-                    <Slider
-                      value={priceRange}
-                      onValueChange={handlePriceRangeChange}
-                      max={2000000}
-                      step={50000}
-                      className="mt-6"
-                    />
-                    <div className="flex items-center justify-between text-sm">
-                      <span>${priceRange[0].toLocaleString()}</span>
-                      <span>{priceRange[0] === 2000000 ? "$2M+" : `$${priceRange[0].toLocaleString()}`}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 font-medium">Bedrooms</h3>
-                  <div className="space-y-2">
-                    <Select
-                      value={filters.bedrooms}
-                      onValueChange={(value) => handleFilterChange("bedrooms", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select bedrooms" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any</SelectItem>
-                        <SelectItem value="1">1+</SelectItem>
-                        <SelectItem value="2">2+</SelectItem>
-                        <SelectItem value="3">3+</SelectItem>
-                        <SelectItem value="4">4+</SelectItem>
-                        <SelectItem value="5">5+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 font-medium">Bathrooms</h3>
-                  <div className="space-y-2">
-                    <Select
-                      value={filters.bathrooms}
-                      onValueChange={(value) => handleFilterChange("bathrooms", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select bathrooms" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any</SelectItem>
-                        <SelectItem value="1">1+</SelectItem>
-                        <SelectItem value="2">2+</SelectItem>
-                        <SelectItem value="3">3+</SelectItem>
-                        <SelectItem value="4">4+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
                 <div>
                   <h3 className="mb-2 font-medium">Location</h3>
                   <div className="space-y-2">
@@ -221,15 +203,167 @@ export default function PropertiesPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="any">Any Location</SelectItem>
-                        <SelectItem value="New York">New York</SelectItem>
-                        <SelectItem value="Los Angeles">Los Angeles</SelectItem>
-                        <SelectItem value="Miami">Miami</SelectItem>
-                        <SelectItem value="Chicago">Chicago</SelectItem>
-                        <SelectItem value="Houston">Houston</SelectItem>
+                        {cities.map((city) => (
+                          <SelectItem key={city} value={city}>{city}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+
+                <div>
+                  <h3 className="mb-2 font-medium">Price Range (₹/month)</h3>
+                  <div className="space-y-4">
+                    <Slider
+                      value={priceRange}
+                      onValueChange={handlePriceRangeChange}
+                      max={200000}
+                      step={5000}
+                      className="mt-6"
+                    />
+                    <div className="flex items-center justify-between text-sm">
+                      <span>₹{priceRange[0].toLocaleString()}</span>
+                      <span>{priceRange[0] === 200000 ? "₹2L+" : `₹${priceRange[0].toLocaleString()}`}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coworking Specific Filters */}
+                {isCoworkingType(activeTab) && (
+                  <>
+                    <div>
+                      <h3 className="mb-2 font-medium">Seating Capacity</h3>
+                      <div className="space-y-2">
+                        <Select
+                          value={filters.seating_capacity}
+                          onValueChange={(value) => handleFilterChange("seating_capacity", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select capacity" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="50">50+</SelectItem>
+                            <SelectItem value="100">100+</SelectItem>
+                            <SelectItem value="200">200+</SelectItem>
+                            <SelectItem value="500">500+</SelectItem>
+                            <SelectItem value="1000">1000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 font-medium">Center Area (sq ft)</h3>
+                      <div className="space-y-2">
+                        <Select
+                          value={filters.center_area}
+                          onValueChange={(value) => handleFilterChange("center_area", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select area" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="5000">5,000+</SelectItem>
+                            <SelectItem value="10000">10,000+</SelectItem>
+                            <SelectItem value="20000">20,000+</SelectItem>
+                            <SelectItem value="50000">50,000+</SelectItem>
+                            <SelectItem value="100000">1,00,000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 font-medium">Weekly Hours</h3>
+                      <div className="space-y-2">
+                        <Select
+                          value={filters.weekly_hours}
+                          onValueChange={(value) => handleFilterChange("weekly_hours", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select hours" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="40">40+ hours</SelectItem>
+                            <SelectItem value="50">50+ hours</SelectItem>
+                            <SelectItem value="60">60+ hours</SelectItem>
+                            <SelectItem value="70">70+ hours</SelectItem>
+                            <SelectItem value="80">80+ hours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Office Rent Specific Filters */}
+                {isOfficeRentType(activeTab) && (
+                  <>
+                    <div>
+                      <h3 className="mb-2 font-medium">Floor Size (sq ft)</h3>
+                      <div className="space-y-2">
+                        <Select
+                          value={filters.floor_size}
+                          onValueChange={(value) => handleFilterChange("floor_size", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select floor size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="500">500+</SelectItem>
+                            <SelectItem value="1000">1,000+</SelectItem>
+                            <SelectItem value="2000">2,000+</SelectItem>
+                            <SelectItem value="5000">5,000+</SelectItem>
+                            <SelectItem value="10000">10,000+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 font-medium">Building Grade</h3>
+                      <div className="space-y-2">
+                        <Select
+                          value={filters.building_grade}
+                          onValueChange={(value) => handleFilterChange("building_grade", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select grade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="1">Grade A</SelectItem>
+                            <SelectItem value="2">Grade B</SelectItem>
+                            <SelectItem value="3">Grade C</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="mb-2 font-medium">Furnishing</h3>
+                      <div className="space-y-2">
+                        <Select
+                          value={filters.furnishing}
+                          onValueChange={(value) => handleFilterChange("furnishing", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select furnishing" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="furnished">Furnished</SelectItem>
+                            <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex gap-2">
                   <Button className="flex-1" onClick={handleApplyFilters}>
