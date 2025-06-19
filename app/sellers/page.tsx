@@ -333,16 +333,16 @@ export default function SellersPage() {
   const prepareDataForAPI = () => {
     const data: any = {
       city: formData.city,
-      total_weekly_hours: formData.total_weekly_hours,
-      days_open_per_week: formData.days_open_per_week,
+      total_weekly_hours: Number(formData.total_weekly_hours) || 0,
+      days_open_per_week: Number(formData.days_open_per_week) || 0,
       has_different_timings: formData.has_different_timings ? 1 : 0,
       weekday_opening_time: formData.weekday_opening_time,
       weekday_closing_time: formData.weekday_closing_time,
-      nearest_metro_distance: formData.nearest_metro_distance,
-      nearest_bus_distance: formData.nearest_bus_distance,
-      nearest_train_distance: formData.nearest_train_distance,
-      nearest_airport_distance: formData.nearest_airport_distance,
-      nearest_hospital_distance: formData.nearest_hospital_distance,
+      nearest_metro_distance: Number(formData.nearest_metro_distance) || 0,
+      nearest_bus_distance: Number(formData.nearest_bus_distance) || 0,
+      nearest_train_distance: Number(formData.nearest_train_distance) || 0,
+      nearest_airport_distance: Number(formData.nearest_airport_distance) || 0,
+      nearest_hospital_distance: Number(formData.nearest_hospital_distance) || 0,
       "2 wheeler parking": formData["2_wheeler_parking"] ? 1 : 0,
       "4 wheeler parking": formData["4_wheeler_parking"] ? 1 : 0,
       "Air Conditioners": formData.air_conditioners ? 1 : 0,
@@ -360,17 +360,17 @@ export default function SellersPage() {
 
     // Add property type specific fields
     if (formData.propertyType.startsWith("coworking")) {
-      data.total_center_area = formData.total_center_area || 0
-      data.total_seating_capacity = formData.total_seating_capacity || 0
-      data.typical_floorplate_area = formData.typical_floorplate_area || 0
+      data.total_center_area = Number(formData.total_center_area) || 0
+      data.total_seating_capacity = Number(formData.total_seating_capacity) || 0
+      data.typical_floorplate_area = Number(formData.typical_floorplate_area) || 0
       data.building_type_business_park = formData.building_type_business_park ? 1 : 0
       data.building_type_independent_commercial_tower = formData.building_type_independent_commercial_tower ? 1 : 0
     } else if (formData.propertyType === "office_rent") {
-      data.floor_size = formData.floor_size || 0
-      data.lock_in = formData.lock_in || 0
-      data.floors = formData.floors || 0
-      data.building_grade = formData.building_grade || 0
-      data.year_built = formData.year_built || 0
+      data.floor_size = Number(formData.floor_size) || 0
+      data.lock_in = Number(formData.lock_in) || 0
+      data.floors = Number(formData.floors) || 0
+      data.building_grade = Number(formData.building_grade) || 0
+      data.year_built = Number(formData.year_built) || 0
       data.air_conditioning = formData.air_conditioners ? 1 : 0
       data.furnishing_Fully_Furnished = formData.furnishing_fully_furnished ? 1 : 0
       data.furnishing_Unfurnished = formData.furnishing_unfurnished ? 1 : 0
