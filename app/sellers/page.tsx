@@ -325,6 +325,40 @@ export default function SellersPage() {
     setFormData(prev => ({ ...prev, [field]: checked }))
   }
 
+  const handleRadioChange = (field: keyof PropertyFormData, value: string) => {
+    // For building type radio buttons, set the selected one to true and others to false
+    if (field.includes('building_type')) {
+      setFormData(prev => {
+        const newData = { ...prev }
+        // Set all building type fields to false first
+        if (prev.propertyType.startsWith('coworking')) {
+          newData.building_type_business_park = false
+          newData.building_type_independent_commercial_tower = false
+        } else if (prev.propertyType === 'office_rent') {
+          newData.building_type_business_tower = false
+          newData.building_type_it_ites = false
+          newData.building_type_independent_commercial_tower_office = false
+        }
+        // Set the selected field to true
+        ;(newData as any)[field] = true
+        return newData
+      })
+    } else {
+      // For other radio buttons (like furnishing)
+      setFormData(prev => {
+        const newData = { ...prev }
+        if (field === 'furnishing_fully_furnished') {
+          newData.furnishing_fully_furnished = true
+          newData.furnishing_unfurnished = false
+        } else if (field === 'furnishing_unfurnished') {
+          newData.furnishing_fully_furnished = false
+          newData.furnishing_unfurnished = true
+        }
+        return newData
+      })
+    }
+  }
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     setFormData(prev => ({ ...prev, images: files }))
@@ -709,21 +743,32 @@ export default function SellersPage() {
               placeholder="e.g., 10000"
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="building_type_business_park"
-              checked={formData.building_type_business_park || false}
-              onCheckedChange={(checked) => handleCheckboxChange("building_type_business_park", checked as boolean)}
-            />
-            <Label htmlFor="building_type_business_park">Business Park</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="building_type_independent_commercial_tower"
-              checked={formData.building_type_independent_commercial_tower || false}
-              onCheckedChange={(checked) => handleCheckboxChange("building_type_independent_commercial_tower", checked as boolean)}
-            />
-            <Label htmlFor="building_type_independent_commercial_tower">Independent Commercial Tower</Label>
+          <div>
+            <Label>Building Type</Label>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="building_type_business_park"
+                  name="coworking_building_type"
+                  checked={formData.building_type_business_park || false}
+                  onChange={() => handleRadioChange("building_type_business_park", "business_park")}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="building_type_business_park" className="text-sm font-normal">Business Park</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="building_type_independent_commercial_tower"
+                  name="coworking_building_type"
+                  checked={formData.building_type_independent_commercial_tower || false}
+                  onChange={() => handleRadioChange("building_type_independent_commercial_tower", "independent_commercial_tower")}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="building_type_independent_commercial_tower" className="text-sm font-normal">Independent Commercial Tower</Label>
+              </div>
+            </div>
           </div>
         </div>
       )
@@ -780,45 +825,70 @@ export default function SellersPage() {
               placeholder="e.g., 2015"
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="furnishing_fully_furnished"
-              checked={formData.furnishing_fully_furnished || false}
-              onCheckedChange={(checked) => handleCheckboxChange("furnishing_fully_furnished", checked as boolean)}
-            />
-            <Label htmlFor="furnishing_fully_furnished">Fully Furnished</Label>
+          <div>
+            <Label>Furnishing</Label>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="furnishing_fully_furnished"
+                  name="furnishing"
+                  checked={formData.furnishing_fully_furnished || false}
+                  onChange={() => handleRadioChange("furnishing_fully_furnished", "fully_furnished")}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="furnishing_fully_furnished" className="text-sm font-normal">Fully Furnished</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="furnishing_unfurnished"
+                  name="furnishing"
+                  checked={formData.furnishing_unfurnished || false}
+                  onChange={() => handleRadioChange("furnishing_unfurnished", "unfurnished")}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="furnishing_unfurnished" className="text-sm font-normal">Unfurnished</Label>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="furnishing_unfurnished"
-              checked={formData.furnishing_unfurnished || false}
-              onCheckedChange={(checked) => handleCheckboxChange("furnishing_unfurnished", checked as boolean)}
-            />
-            <Label htmlFor="furnishing_unfurnished">Unfurnished</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="building_type_business_tower"
-              checked={formData.building_type_business_tower || false}
-              onCheckedChange={(checked) => handleCheckboxChange("building_type_business_tower", checked as boolean)}
-            />
-            <Label htmlFor="building_type_business_tower">Business Tower</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="building_type_it_ites"
-              checked={formData.building_type_it_ites || false}
-              onCheckedChange={(checked) => handleCheckboxChange("building_type_it_ites", checked as boolean)}
-            />
-            <Label htmlFor="building_type_it_ites">IT/ITeS Building</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="building_type_independent_commercial_tower_office"
-              checked={formData.building_type_independent_commercial_tower_office || false}
-              onCheckedChange={(checked) => handleCheckboxChange("building_type_independent_commercial_tower_office", checked as boolean)}
-            />
-            <Label htmlFor="building_type_independent_commercial_tower_office">Independent Commercial Tower</Label>
+          <div>
+            <Label>Building Type</Label>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="building_type_business_tower"
+                  name="office_building_type"
+                  checked={formData.building_type_business_tower || false}
+                  onChange={() => handleRadioChange("building_type_business_tower", "business_tower")}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="building_type_business_tower" className="text-sm font-normal">Business Tower</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="building_type_it_ites"
+                  name="office_building_type"
+                  checked={formData.building_type_it_ites || false}
+                  onChange={() => handleRadioChange("building_type_it_ites", "it_ites")}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="building_type_it_ites" className="text-sm font-normal">IT/ITeS Building</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="building_type_independent_commercial_tower_office"
+                  name="office_building_type"
+                  checked={formData.building_type_independent_commercial_tower_office || false}
+                  onChange={() => handleRadioChange("building_type_independent_commercial_tower_office", "independent_commercial_tower")}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="building_type_independent_commercial_tower_office" className="text-sm font-normal">Independent Commercial Tower</Label>
+              </div>
+            </div>
           </div>
         </div>
       )
