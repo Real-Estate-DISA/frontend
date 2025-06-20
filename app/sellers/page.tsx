@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Building2, MapPin, DollarSign, Upload, Calculator, CheckCircle, AlertCircle } from "lucide-react"
+import { Building2, MapPin, DollarSign, Upload, Calculator, CheckCircle, AlertCircle, Image } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { propertyService, Property, LocationFeatures } from "@/lib/services/property.service"
 import { userService } from "@/lib/services/user.service"
@@ -515,20 +515,58 @@ export default function SellersPage() {
     try {
       console.log("Starting property upload...")
       
-      // Use placeholder images instead of uploading to Firebase Storage (to avoid CORS issues)
+      // Convert uploaded images to data URLs for storage
       const imageUrls: string[] = []
       
       if (formData.images.length > 0) {
-        // Generate placeholder URLs for each uploaded image
-        formData.images.forEach((image, index) => {
-          imageUrls.push(`https://via.placeholder.com/400x300/cccccc/666666?text=Property+Image+${index + 1}`)
-        })
+        // Convert each uploaded image to a compressed data URL
+        for (let i = 0; i < formData.images.length; i++) {
+          const image = formData.images[i]
+          const dataUrl = await new Promise<string>((resolve) => {
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')
+            const img = new window.Image()
+            
+            img.onload = () => {
+              // Set canvas size (max 800px width/height for performance)
+              const maxSize = 800
+              let { width, height } = img
+              
+              if (width > height) {
+                if (width > maxSize) {
+                  height = (height * maxSize) / width
+                  width = maxSize
+                }
+              } else {
+                if (height > maxSize) {
+                  width = (width * maxSize) / height
+                  height = maxSize
+                }
+              }
+              
+              canvas.width = width
+              canvas.height = height
+              
+              // Draw and compress image
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height)
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8) // 80% quality
+                resolve(compressedDataUrl)
+              } else {
+                resolve("")
+              }
+            }
+            
+            img.src = URL.createObjectURL(image)
+          })
+          imageUrls.push(dataUrl)
+        }
       } else {
         // Default placeholder if no images
         imageUrls.push("https://via.placeholder.com/400x300/cccccc/666666?text=Property+Image")
       }
 
-      console.log(`Generated ${imageUrls.length} placeholder image URLs`)
+      console.log(`Converted ${imageUrls.length} images to data URLs`)
 
       // Prepare property data for Firestore
       const propertyData = {
@@ -539,7 +577,7 @@ export default function SellersPage() {
         bedrooms: 0, // Not applicable for coworking/office spaces
         bathrooms: 1, // Default value
         area: formData.total_center_area || formData.floor_size || 1000,
-        image: imageUrls[0] || "/placeholder.svg",
+        image: imageUrls[0] || "/placeholder.svg", // First image used as main property image for cards and detailed views
         type: formData.propertyType,
         featured: false,
         userId: user.uid,
@@ -1152,6 +1190,7 @@ export default function SellersPage() {
                         <p className="text-sm text-gray-600 mt-1">
                           Upload multiple images of your property (min 3, max 10 images). 
                           Our AI will analyze these images along with your property details for accurate price prediction.
+                          The first image will be used as the main property photo in listings.
                         </p>
               </div>
 
@@ -1166,6 +1205,11 @@ export default function SellersPage() {
                                   alt={`Property image ${index + 1}`}
                                   className="w-full h-24 object-cover rounded border"
                                 />
+                                {index === 0 && (
+                                  <div className="absolute -top-1 -left-1 bg-blue-500 text-white text-xs px-1 rounded">
+                                    Main
+                                  </div>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1327,7 +1371,7 @@ export default function SellersPage() {
                     Upload Property
                   </CardTitle>
                   <CardDescription>
-                    Add images and finalize your property listing
+                    Review your property details and finalize your listing
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -1359,24 +1403,49 @@ export default function SellersPage() {
                         </div>
                       )}
 
+                      {/* Property Images Summary */}
                       <div>
-                        <Label htmlFor="images">Property Images</Label>
-                        <Input
-                          id="images"
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="mt-2"
-                        />
-                        <p className="text-sm text-gray-600 mt-1">
-                          Upload multiple images of your property (max 10 images)
-                        </p>
+                        <Label>Property Images ({formData.images.length} uploaded)</Label>
+                        <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Image className="h-4 w-4 text-gray-600" />
+                            <span className="text-sm font-medium text-gray-700">
+                              {formData.images.length} images ready for upload
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Your property will be displayed with {formData.images.length} high-quality images. 
+                            The first image will be used as the main property photo.
+                          </p>
+                          {formData.images.length > 0 && (
+                            <div className="mt-3 flex gap-2 overflow-x-auto">
+                              {formData.images.slice(0, 5).map((image, index) => (
+                                <div key={index} className="relative flex-shrink-0">
+                                  <img
+                                    src={URL.createObjectURL(image)}
+                                    alt={`Property image ${index + 1}`}
+                                    className="w-16 h-16 object-cover rounded border"
+                                  />
+                                  {index === 0 && (
+                                    <div className="absolute -top-1 -left-1 bg-blue-500 text-white text-xs px-1 rounded">
+                                      Main
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {formData.images.length > 5 && (
+                                <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded border flex items-center justify-center">
+                                  <span className="text-xs text-gray-600">+{formData.images.length - 5}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex gap-4 justify-center">
-                        <Button variant="outline" onClick={() => setActiveTab("prediction")}>
-                          Back to Prediction
+                        <Button variant="outline" onClick={() => setActiveTab("details")}>
+                          Edit Details
                         </Button>
                         <Button 
                           onClick={uploadProperty}
