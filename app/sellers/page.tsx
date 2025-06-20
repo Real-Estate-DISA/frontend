@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Building2, MapPin, DollarSign, Upload, Calculator, CheckCircle, AlertCircle, Image } from "lucide-react"
+import { Building2, MapPin, DollarSign, Upload, Calculator, CheckCircle, AlertCircle, Image, RefreshCw } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { propertyService, Property, LocationFeatures } from "@/lib/services/property.service"
 import { userService } from "@/lib/services/user.service"
@@ -283,6 +283,7 @@ export default function SellersPage() {
   const [predictedPrice, setPredictedPrice] = useState<number | null>(null)
   const [isPredicting, setIsPredicting] = useState(false)
   const [hasPrediction, setHasPrediction] = useState(false)
+  const [predictionTimestamp, setPredictionTimestamp] = useState<Date | null>(null)
   const [locationFeatures, setLocationFeatures] = useState<LocationFeatures | null>(null)
   const [formData, setFormData] = useState<PropertyFormData>(initialFormData)
   const [activeTab, setActiveTab] = useState("details")
@@ -365,13 +366,18 @@ export default function SellersPage() {
   }
 
   const prepareDataForAPI = () => {
+    // Send only raw features from the form - no preprocessing
     const data: any = {
+      // Basic information
+      propertyType: formData.propertyType,
       city: formData.city,
       total_weekly_hours: Number(formData.total_weekly_hours) || 0,
       days_open_per_week: Number(formData.days_open_per_week) || 0,
-      has_different_timings: formData.has_different_timings ? 1 : 0,
+      has_different_timings: formData.has_different_timings,
       weekday_opening_time: formData.weekday_opening_time,
       weekday_closing_time: formData.weekday_closing_time,
+      
+      // Location distances (raw values)
       nearest_metro_distance: Number(formData.nearest_metro_distance) || 0,
       nearest_bus_distance: Number(formData.nearest_bus_distance) || 0,
       nearest_train_distance: Number(formData.nearest_train_distance) || 0,
@@ -379,112 +385,74 @@ export default function SellersPage() {
       nearest_hospital_distance: Number(formData.nearest_hospital_distance) || 0,
     }
 
-    // Add city encoding
-    cities.forEach(city => {
-      data[`city_${city}`] = formData.city === city ? 1 : 0
-    })
+    // Add raw amenity data (boolean values)
+    data["2_wheeler_parking"] = formData["2_wheeler_parking"] || false
+    data["4_wheeler_parking"] = formData["4_wheeler_parking"] || false
+    data["air_conditioners"] = formData.air_conditioners || false
+    data["air_filters"] = formData.air_filters || false
+    data["breakout_recreational_area"] = formData.breakout_recreational_area || false
+    data["bus"] = formData.bus || false
+    data["cafeteria"] = formData.cafeteria || false
+    data["chairs_desks"] = formData.chairs_desks || false
+    data["charging"] = formData.charging || false
+    data["coffee"] = formData.coffee || false
+    data["conference_room"] = formData.conference_room || false
+    data["event_space"] = formData.event_space || false
+    data["fire_extinguisher"] = formData.fire_extinguisher || false
+    data["first_aid_kit"] = formData.first_aid_kit || false
+    data["fitness_centre"] = formData.fitness_centre || false
+    data["indoor_plants"] = formData.indoor_plants || false
+    data["lan"] = formData.lan || false
+    data["library"] = formData.library || false
+    data["lift"] = formData.lift || false
+    data["lounge_area"] = formData.lounge_area || false
+    data["lunch"] = formData.lunch || false
+    data["meeting_rooms"] = formData.meeting_rooms || false
+    data["metro_connectivity"] = formData.metro_connectivity || false
+    data["nearby_eateries"] = formData.nearby_eateries || false
+    data["outdoor_seating"] = formData.outdoor_seating || false
+    data["pantry_area"] = formData.pantry_area || false
+    data["pet_friendly"] = formData.pet_friendly || false
+    data["phone_booth"] = formData.phone_booth || false
+    data["power_backup"] = formData.power_backup || false
+    data["printer"] = formData.printer || false
+    data["rental_cycles_evs"] = formData.rental_cycles_evs || false
+    data["security_personnel"] = formData.security_personnel || false
+    data["separate_washroom"] = formData.separate_washroom || false
+    data["shuttle"] = formData.shuttle || false
+    data["single_washroom"] = formData.single_washroom || false
+    data["smoke_alarms"] = formData.smoke_alarms || false
+    data["snacks_drinks"] = formData.snacks_drinks || false
+    data["stationery"] = formData.stationery || false
+    data["storage_space"] = formData.storage_space || false
+    data["tea"] = formData.tea || false
+    data["training_room"] = formData.training_room || false
+    data["washroom_near_premise"] = formData.washroom_near_premise || false
+    data["water"] = formData.water || false
+    data["wellness_centre"] = formData.wellness_centre || false
+    data["wifi"] = formData.wifi || false
 
-    // Add ALL coworking amenities (matching CSV column names exactly)
-    data["2 wheeler parking"] = formData["2_wheeler_parking"] ? 1 : 0
-    data["4 wheeler parking"] = formData["4_wheeler_parking"] ? 1 : 0
-    data["Air Conditioners"] = formData.air_conditioners ? 1 : 0
-    data["Air Filters"] = formData.air_filters ? 1 : 0
-    data["Breakout & Recreational Area"] = formData.breakout_recreational_area ? 1 : 0
-    data["Bus"] = formData.bus ? 1 : 0
-    data["Cafeteria"] = formData.cafeteria ? 1 : 0
-    data["Chairs & Desks"] = formData.chairs_desks ? 1 : 0
-    data["Charging"] = formData.charging ? 1 : 0
-    data["Coffee"] = formData.coffee ? 1 : 0
-    data["Conference Room"] = formData.conference_room ? 1 : 0
-    data["Event Space"] = formData.event_space ? 1 : 0
-    data["Fire Extinguisher"] = formData.fire_extinguisher ? 1 : 0
-    data["First Aid Kit"] = formData.first_aid_kit ? 1 : 0
-    data["Fitness Centre"] = formData.fitness_centre ? 1 : 0
-    data["Indoor Plants"] = formData.indoor_plants ? 1 : 0
-    data["LAN"] = formData.lan ? 1 : 0
-    data["Library"] = formData.library ? 1 : 0
-    data["Lift"] = formData.lift ? 1 : 0
-    data["Lounge Area"] = formData.lounge_area ? 1 : 0
-    data["Lunch"] = formData.lunch ? 1 : 0
-    data["Meeting Rooms"] = formData.meeting_rooms ? 1 : 0
-    data["Metro Connectivity"] = formData.metro_connectivity ? 1 : 0
-    data["Nearby Eateries"] = formData.nearby_eateries ? 1 : 0
-    data["Outdoor Seating"] = formData.outdoor_seating ? 1 : 0
-    data["Pantry Area"] = formData.pantry_area ? 1 : 0
-    data["Pet Friendly"] = formData.pet_friendly ? 1 : 0
-    data["Phone Booth"] = formData.phone_booth ? 1 : 0
-    data["Power Backup"] = formData.power_backup ? 1 : 0
-    data["Printer"] = formData.printer ? 1 : 0
-    data["Rental cycles/EVs"] = formData.rental_cycles_evs ? 1 : 0
-    data["Security Personnel"] = formData.security_personnel ? 1 : 0
-    data["Separate Washroom"] = formData.separate_washroom ? 1 : 0
-    data["Shuttle"] = formData.shuttle ? 1 : 0
-    data["Single Washroom"] = formData.single_washroom ? 1 : 0
-    data["Smoke Alarms"] = formData.smoke_alarms ? 1 : 0
-    data["Snacks & Drinks"] = formData.snacks_drinks ? 1 : 0
-    data["Stationery"] = formData.stationery ? 1 : 0
-    data["Storage Space"] = formData.storage_space ? 1 : 0
-    data["Tea"] = formData.tea ? 1 : 0
-    data["Training Room"] = formData.training_room ? 1 : 0
-    data["Washroom Near Premise"] = formData.washroom_near_premise ? 1 : 0
-    data["Water"] = formData.water ? 1 : 0
-    data["Wellness Centre"] = formData.wellness_centre ? 1 : 0
-    data["Wifi"] = formData.wifi ? 1 : 0
-
-    // Add property type specific fields
+    // Add property type specific raw fields
     if (formData.propertyType.startsWith("coworking")) {
       data.total_center_area = Number(formData.total_center_area) || 0
       data.total_seating_capacity = Number(formData.total_seating_capacity) || 0
       data.typical_floorplate_area = Number(formData.typical_floorplate_area) || 0
-      data.building_type_business_park = formData.building_type_business_park ? 1 : 0
-      data.building_type_independent_commercial_tower = formData.building_type_independent_commercial_tower ? 1 : 0
+      data.building_type_business_park = formData.building_type_business_park || false
+      data.building_type_independent_commercial_tower = formData.building_type_independent_commercial_tower || false
     } else if (formData.propertyType === "office_rent") {
       data.floor_size = Number(formData.floor_size) || 0
       data.lock_in = Number(formData.lock_in) || 0
       data.floors = Number(formData.floors) || 0
       data.building_grade = Number(formData.building_grade) || 0
       data.year_built = Number(formData.year_built) || 0
-      data.air_conditioning = formData.air_conditioners ? 1 : 0
-      data.furnishing_Fully_Furnished = formData.furnishing_fully_furnished ? 1 : 0
-      data.furnishing_Unfurnished = formData.furnishing_unfurnished ? 1 : 0
-      data.building_type_Business_Tower = formData.building_type_business_tower ? 1 : 0
-      data["building_type_IT/ITeS"] = formData.building_type_it_ites ? 1 : 0
-      data.building_type_Independent_Commercial_Tower = formData.building_type_independent_commercial_tower_office ? 1 : 0
+      data.furnishing_fully_furnished = formData.furnishing_fully_furnished || false
+      data.furnishing_unfurnished = formData.furnishing_unfurnished || false
+      data.building_type_business_tower = formData.building_type_business_tower || false
+      data.building_type_it_ites = formData.building_type_it_ites || false
+      data.building_type_independent_commercial_tower_office = formData.building_type_independent_commercial_tower_office || false
     }
 
-    // Add location-based features (these would need to be calculated or provided)
-    // For now, we'll set them to 0 and they can be enhanced later
-    data.avg_metro_distance = Number(formData.nearest_metro_distance) || 0
-    data.metro_within_1km = Number(formData.nearest_metro_distance) <= 1 ? 1 : 0
-    data.metro_within_2km = Number(formData.nearest_metro_distance) <= 2 ? 1 : 0
-    data.metro_within_3km = Number(formData.nearest_metro_distance) <= 3 ? 1 : 0
-    data.total_metro_count = Number(formData.nearest_metro_distance) <= 3 ? 1 : 0
-
-    data.avg_bus_distance = Number(formData.nearest_bus_distance) || 0
-    data.bus_within_1km = Number(formData.nearest_bus_distance) <= 1 ? 1 : 0
-    data.bus_within_2km = Number(formData.nearest_bus_distance) <= 2 ? 1 : 0
-    data.bus_within_3km = Number(formData.nearest_bus_distance) <= 3 ? 1 : 0
-    data.total_bus_count = Number(formData.nearest_bus_distance) <= 3 ? 1 : 0
-
-    data.avg_train_distance = Number(formData.nearest_train_distance) || 0
-    data.train_within_1km = Number(formData.nearest_train_distance) <= 1 ? 1 : 0
-    data.train_within_2km = Number(formData.nearest_train_distance) <= 2 ? 1 : 0
-    data.train_within_3km = Number(formData.nearest_train_distance) <= 3 ? 1 : 0
-    data.total_train_count = Number(formData.nearest_train_distance) <= 3 ? 1 : 0
-
-    data.avg_airport_distance = Number(formData.nearest_airport_distance) || 0
-    data.airport_within_1km = Number(formData.nearest_airport_distance) <= 1 ? 1 : 0
-    data.airport_within_2km = Number(formData.nearest_airport_distance) <= 2 ? 1 : 0
-    data.airport_within_3km = Number(formData.nearest_airport_distance) <= 3 ? 1 : 0
-    data.total_airport_count = Number(formData.nearest_airport_distance) <= 3 ? 1 : 0
-
-    data.avg_hospital_distance = Number(formData.nearest_hospital_distance) || 0
-    data.hospital_within_1km = Number(formData.nearest_hospital_distance) <= 1 ? 1 : 0
-    data.hospital_within_2km = Number(formData.nearest_hospital_distance) <= 2 ? 1 : 0
-    data.hospital_within_3km = Number(formData.nearest_hospital_distance) <= 3 ? 1 : 0
-    data.total_hospital_count = Number(formData.nearest_hospital_distance) <= 3 ? 1 : 0
-
-    console.log('📊 API Data being sent:', data)
+    console.log('📊 Raw API Data being sent:', data)
     return data
   }
 
@@ -498,12 +466,20 @@ export default function SellersPage() {
       return
     }
 
+    // Clear previous prediction to ensure fresh API call
+    setPredictedPrice(null)
+    setHasPrediction(false)
+    setPredictionTimestamp(null)
+    
     setIsPredicting(true)
     try {
       const data = prepareDataForAPI()
       const endpoint = formData.propertyType.startsWith("coworking") 
         ? "/predict/coworking" 
         : "/predict/office_rent"
+
+      console.log('🔄 Making fresh API call to:', endpoint)
+      console.log('📊 Updated data being sent:', data)
 
       const response = await fetch(`http://localhost:5000${endpoint}`, {
         method: "POST",
@@ -518,6 +494,7 @@ export default function SellersPage() {
       }
 
       const result = await response.json()
+      console.log('📈 API Response:', result)
       
       // Handle different response structures
       let predictedPrice = null
@@ -536,10 +513,11 @@ export default function SellersPage() {
       if (predictedPrice) {
         setPredictedPrice(predictedPrice)
         setHasPrediction(true)
+        setPredictionTimestamp(new Date())
         
         toast({
-          title: "Price Prediction Successful",
-          description: `Predicted price: ₹${predictedPrice.toLocaleString()}`,
+          title: "Price Prediction Updated",
+          description: `New predicted price: ₹${predictedPrice.toLocaleString()}`,
         })
       } else {
         throw new Error("No prediction received")
@@ -1385,7 +1363,40 @@ export default function SellersPage() {
                         <p className="text-sm text-green-600 mt-2">
                           Based on analysis of {formData.images.length} property images and detailed specifications
                         </p>
+                        {predictionTimestamp && (
+                          <p className="text-xs text-green-500 mt-1">
+                            Last updated: {predictionTimestamp.toLocaleString()}
+                          </p>
+                        )}
                       </div>
+                      
+                      {/* Add option to get fresh prediction */}
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="font-semibold text-blue-800 mb-2">Need to Update Prediction?</h4>
+                        <p className="text-sm text-blue-700 mb-3">
+                          If you've made changes to your property details, click below to get a fresh prediction based on your updated information.
+                        </p>
+                        <Button 
+                          onClick={predictPrice} 
+                          disabled={isPredicting}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          {isPredicting ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              Updating...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4" />
+                              Get Fresh Prediction
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
                       <div className="flex gap-4 justify-center">
                         <Button variant="outline" onClick={() => setActiveTab("details")}>
                           Edit Details
