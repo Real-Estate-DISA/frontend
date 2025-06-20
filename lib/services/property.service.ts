@@ -113,20 +113,11 @@ export const propertyService = {
           constraints.push(where('userId', '==', filters.userId))
         }
 
-        // Handle type filter - only apply if no other complex filters
-        if (filters.type && filters.type !== 'all') {
-          // Only apply type filter if we don't have price range filters to avoid composite index issues
-          if (filters.minPrice === undefined && filters.maxPrice === undefined) {
-            constraints.push(where('type', '==', filters.type))
-            console.log('✅ Applied type filter in query:', filters.type)
-          } else {
-            console.log('⚠️ Type filter will be applied in memory due to price filters')
-          }
-        }
-
         // Handle location filter
         if (filters.location && filters.location !== 'any') {
-          constraints.push(where('location', '==', filters.location))
+          // Check if we should filter by location field or propertyDetails.city
+          console.log('🔍 Location filter requested:', filters.location)
+          // We'll apply location filter in memory since it might be in propertyDetails.city
         }
       }
 
@@ -161,16 +152,40 @@ export const propertyService = {
         title: properties[0].title,
         type: properties[0].type,
         price: properties[0].price,
-        location: properties[0].location
+        location: properties[0].location,
+        propertyDetails: properties[0].propertyDetails ? {
+          city: properties[0].propertyDetails.city,
+          total_seating_capacity: properties[0].propertyDetails.total_seating_capacity,
+          total_center_area: properties[0].propertyDetails.total_center_area,
+          total_weekly_hours: properties[0].propertyDetails.total_weekly_hours,
+          floor_size: properties[0].propertyDetails.floor_size,
+          building_grade: properties[0].propertyDetails.building_grade,
+          furnishing_fully_furnished: properties[0].propertyDetails.furnishing_fully_furnished,
+          furnishing_unfurnished: properties[0].propertyDetails.furnishing_unfurnished
+        } : 'No propertyDetails'
       } : 'No properties found')
 
       // Apply additional filters in memory
       if (filters) {
-        // Handle type filter in memory if not applied in query
-        if (filters.type && filters.type !== 'all' && (filters.minPrice !== undefined || filters.maxPrice !== undefined)) {
+        console.log('🔍 Applying filters in memory:', {
+          type: filters.type,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          location: filters.location,
+          searchTerm: filters.searchTerm,
+          seating_capacity: filters.seating_capacity,
+          center_area: filters.center_area,
+          weekly_hours: filters.weekly_hours,
+          floor_size: filters.floor_size,
+          building_grade: filters.building_grade,
+          furnishing: filters.furnishing
+        })
+        
+        // Apply type filter in memory
+        if (filters.type && filters.type !== 'all') {
           const beforeCount = properties.length
           properties = properties.filter(p => p.type === filters.type)
-          console.log(`🎯 Type filter in memory: ${beforeCount} → ${properties.length} properties`)
+          console.log(`🎯 Type filter in memory: ${beforeCount} → ${properties.length} properties (type: ${filters.type})`)
         }
 
         // Handle price range filtering in memory
@@ -205,6 +220,83 @@ export const propertyService = {
             property.location.toLowerCase().includes(searchLower) ||
             property.description?.toLowerCase().includes(searchLower)
           )
+        }
+
+        // Handle location filtering in memory
+        if (filters.location && filters.location !== 'any') {
+          const beforeCount = properties.length
+          properties = properties.filter(property => {
+            // Check both location field and propertyDetails.city
+            const locationMatch = property.location?.toLowerCase() === filters.location?.toLowerCase()
+            const cityMatch = property.propertyDetails?.city?.toLowerCase() === filters.location?.toLowerCase()
+            return locationMatch || cityMatch
+          })
+          console.log(`📍 Location filter in memory: ${beforeCount} → ${properties.length} properties (filter: ${filters.location})`)
+        }
+
+        // Handle coworking specific filters
+        if (filters.seating_capacity && filters.seating_capacity !== 'any') {
+          const capacity = parseInt(filters.seating_capacity)
+          const beforeCount = properties.length
+          properties = properties.filter(property => 
+            property.propertyDetails?.total_seating_capacity && 
+            property.propertyDetails.total_seating_capacity >= capacity
+          )
+          console.log(`👥 Seating capacity filter: ${beforeCount} → ${properties.length} properties (min: ${capacity})`)
+        }
+
+        if (filters.center_area && filters.center_area !== 'any') {
+          const area = parseInt(filters.center_area)
+          const beforeCount = properties.length
+          properties = properties.filter(property => 
+            property.propertyDetails?.total_center_area && 
+            property.propertyDetails.total_center_area >= area
+          )
+          console.log(`🏢 Center area filter: ${beforeCount} → ${properties.length} properties (min: ${area})`)
+        }
+
+        if (filters.weekly_hours && filters.weekly_hours !== 'any') {
+          const hours = parseInt(filters.weekly_hours)
+          const beforeCount = properties.length
+          properties = properties.filter(property => 
+            property.propertyDetails?.total_weekly_hours && 
+            property.propertyDetails.total_weekly_hours >= hours
+          )
+          console.log(`⏰ Weekly hours filter: ${beforeCount} → ${properties.length} properties (min: ${hours})`)
+        }
+
+        // Handle office rent specific filters
+        if (filters.floor_size && filters.floor_size !== 'any') {
+          const size = parseInt(filters.floor_size)
+          const beforeCount = properties.length
+          properties = properties.filter(property => 
+            property.propertyDetails?.floor_size && 
+            property.propertyDetails.floor_size >= size
+          )
+          console.log(`📏 Floor size filter: ${beforeCount} → ${properties.length} properties (min: ${size})`)
+        }
+
+        if (filters.building_grade && filters.building_grade !== 'any') {
+          const grade = parseInt(filters.building_grade)
+          const beforeCount = properties.length
+          properties = properties.filter(property => 
+            property.propertyDetails?.building_grade && 
+            property.propertyDetails.building_grade === grade
+          )
+          console.log(`🏗️ Building grade filter: ${beforeCount} → ${properties.length} properties (grade: ${grade})`)
+        }
+
+        if (filters.furnishing && filters.furnishing !== 'any') {
+          const beforeCount = properties.length
+          properties = properties.filter(property => {
+            if (filters.furnishing === 'furnished') {
+              return property.propertyDetails?.furnishing_fully_furnished === true
+            } else if (filters.furnishing === 'unfurnished') {
+              return property.propertyDetails?.furnishing_unfurnished === true
+            }
+            return true
+          })
+          console.log(`🪑 Furnishing filter: ${beforeCount} → ${properties.length} properties (type: ${filters.furnishing})`)
         }
       }
 

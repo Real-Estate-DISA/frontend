@@ -40,16 +40,24 @@ const propertyTypes = [
   }
 ]
 
-// Cities from our ML models
+// Cities from our ML models - matching the seller form format
 const cities = [
-  "Noida", "New Delhi", "Gurgaon", "Bangalore", "Ahmedabad", 
-  "Chennai", "Hyderabad", "Mumbai", "Pune"
+  { value: "noida", label: "Noida" },
+  { value: "new_delhi", label: "New Delhi" },
+  { value: "gurgaon", label: "Gurgaon" },
+  { value: "bangalore", label: "Bangalore" },
+  { value: "ahmedabad", label: "Ahmedabad" },
+  { value: "chennai", label: "Chennai" },
+  { value: "hyderabad", label: "Hyderabad" },
+  { value: "mumbai", label: "Mumbai" },
+  { value: "pune", label: "Pune" },
+  { value: "kolkata", label: "Kolkata" }
 ]
 
 export default function PropertiesPage() {
-  const [activeTab, setActiveTab] = useState("dedicated_desk")
+  const [activeTab, setActiveTab] = useState("coworking_dedicated_desk")
   const [filters, setFilters] = useState<PropertyFilter>({
-    type: "dedicated_desk",
+    type: "coworking_dedicated_desk",
     minPrice: 0,
     maxPrice: undefined,
     location: "any",
@@ -82,7 +90,7 @@ export default function PropertiesPage() {
 
   const handlePriceRangeChange = (value: number[]) => {
     setPriceRange(value)
-    const maxPrice = value[0] === 2000000 ? undefined : value[0]
+    const maxPrice = value[0] === 200000 ? undefined : value[0]
     setFilters((prev) => ({
       ...prev,
       minPrice: 0, // Always start from 0
@@ -110,12 +118,14 @@ export default function PropertiesPage() {
 
   const handleApplyFilters = () => {
     console.log('Applying filters:', filters)
-    setAppliedFilters({
+    const finalFilters = {
       ...filters,
       // Ensure price range is properly set
-      minPrice: priceRange[0] === 0 ? undefined : 0,
+      minPrice: 0, // Always start from 0
       maxPrice: priceRange[0] === 0 ? undefined : priceRange[0],
-    })
+    }
+    console.log('Final filters to apply:', finalFilters)
+    setAppliedFilters(finalFilters)
     // On mobile, close the filters panel after applying
     if (window.innerWidth < 1024) {
       setShowFilters(false)
@@ -226,7 +236,7 @@ export default function PropertiesPage() {
                       <SelectContent>
                         <SelectItem value="any">Any Location</SelectItem>
                         {cities.map((city) => (
-                          <SelectItem key={city} value={city}>{city}</SelectItem>
+                          <SelectItem key={city.value} value={city.value}>{city.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -407,7 +417,7 @@ export default function PropertiesPage() {
                       <SelectContent>
                         <SelectItem value="any">Any Location</SelectItem>
                         {cities.map((city) => (
-                          <SelectItem key={city} value={city}>{city}</SelectItem>
+                          <SelectItem key={city.value} value={city.value}>{city.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

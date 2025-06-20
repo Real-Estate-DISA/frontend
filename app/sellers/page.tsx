@@ -377,20 +377,59 @@ export default function SellersPage() {
       nearest_train_distance: Number(formData.nearest_train_distance) || 0,
       nearest_airport_distance: Number(formData.nearest_airport_distance) || 0,
       nearest_hospital_distance: Number(formData.nearest_hospital_distance) || 0,
-      "2 wheeler parking": formData["2_wheeler_parking"] ? 1 : 0,
-      "4 wheeler parking": formData["4_wheeler_parking"] ? 1 : 0,
-      "Air Conditioners": formData.air_conditioners ? 1 : 0,
-      "Lift": formData.lift ? 1 : 0,
-      "Meeting Rooms": formData.meeting_rooms ? 1 : 0,
-      "Pantry Area": formData.pantry_area ? 1 : 0,
-      "Power Backup": formData.power_backup ? 1 : 0,
-      "Wifi": formData.wifi ? 1 : 0,
     }
 
     // Add city encoding
     cities.forEach(city => {
       data[`city_${city}`] = formData.city === city ? 1 : 0
     })
+
+    // Add ALL coworking amenities (matching CSV column names exactly)
+    data["2 wheeler parking"] = formData["2_wheeler_parking"] ? 1 : 0
+    data["4 wheeler parking"] = formData["4_wheeler_parking"] ? 1 : 0
+    data["Air Conditioners"] = formData.air_conditioners ? 1 : 0
+    data["Air Filters"] = formData.air_filters ? 1 : 0
+    data["Breakout & Recreational Area"] = formData.breakout_recreational_area ? 1 : 0
+    data["Bus"] = formData.bus ? 1 : 0
+    data["Cafeteria"] = formData.cafeteria ? 1 : 0
+    data["Chairs & Desks"] = formData.chairs_desks ? 1 : 0
+    data["Charging"] = formData.charging ? 1 : 0
+    data["Coffee"] = formData.coffee ? 1 : 0
+    data["Conference Room"] = formData.conference_room ? 1 : 0
+    data["Event Space"] = formData.event_space ? 1 : 0
+    data["Fire Extinguisher"] = formData.fire_extinguisher ? 1 : 0
+    data["First Aid Kit"] = formData.first_aid_kit ? 1 : 0
+    data["Fitness Centre"] = formData.fitness_centre ? 1 : 0
+    data["Indoor Plants"] = formData.indoor_plants ? 1 : 0
+    data["LAN"] = formData.lan ? 1 : 0
+    data["Library"] = formData.library ? 1 : 0
+    data["Lift"] = formData.lift ? 1 : 0
+    data["Lounge Area"] = formData.lounge_area ? 1 : 0
+    data["Lunch"] = formData.lunch ? 1 : 0
+    data["Meeting Rooms"] = formData.meeting_rooms ? 1 : 0
+    data["Metro Connectivity"] = formData.metro_connectivity ? 1 : 0
+    data["Nearby Eateries"] = formData.nearby_eateries ? 1 : 0
+    data["Outdoor Seating"] = formData.outdoor_seating ? 1 : 0
+    data["Pantry Area"] = formData.pantry_area ? 1 : 0
+    data["Pet Friendly"] = formData.pet_friendly ? 1 : 0
+    data["Phone Booth"] = formData.phone_booth ? 1 : 0
+    data["Power Backup"] = formData.power_backup ? 1 : 0
+    data["Printer"] = formData.printer ? 1 : 0
+    data["Rental cycles/EVs"] = formData.rental_cycles_evs ? 1 : 0
+    data["Security Personnel"] = formData.security_personnel ? 1 : 0
+    data["Separate Washroom"] = formData.separate_washroom ? 1 : 0
+    data["Shuttle"] = formData.shuttle ? 1 : 0
+    data["Single Washroom"] = formData.single_washroom ? 1 : 0
+    data["Smoke Alarms"] = formData.smoke_alarms ? 1 : 0
+    data["Snacks & Drinks"] = formData.snacks_drinks ? 1 : 0
+    data["Stationery"] = formData.stationery ? 1 : 0
+    data["Storage Space"] = formData.storage_space ? 1 : 0
+    data["Tea"] = formData.tea ? 1 : 0
+    data["Training Room"] = formData.training_room ? 1 : 0
+    data["Washroom Near Premise"] = formData.washroom_near_premise ? 1 : 0
+    data["Water"] = formData.water ? 1 : 0
+    data["Wellness Centre"] = formData.wellness_centre ? 1 : 0
+    data["Wifi"] = formData.wifi ? 1 : 0
 
     // Add property type specific fields
     if (formData.propertyType.startsWith("coworking")) {
@@ -413,6 +452,39 @@ export default function SellersPage() {
       data.building_type_Independent_Commercial_Tower = formData.building_type_independent_commercial_tower_office ? 1 : 0
     }
 
+    // Add location-based features (these would need to be calculated or provided)
+    // For now, we'll set them to 0 and they can be enhanced later
+    data.avg_metro_distance = Number(formData.nearest_metro_distance) || 0
+    data.metro_within_1km = Number(formData.nearest_metro_distance) <= 1 ? 1 : 0
+    data.metro_within_2km = Number(formData.nearest_metro_distance) <= 2 ? 1 : 0
+    data.metro_within_3km = Number(formData.nearest_metro_distance) <= 3 ? 1 : 0
+    data.total_metro_count = Number(formData.nearest_metro_distance) <= 3 ? 1 : 0
+
+    data.avg_bus_distance = Number(formData.nearest_bus_distance) || 0
+    data.bus_within_1km = Number(formData.nearest_bus_distance) <= 1 ? 1 : 0
+    data.bus_within_2km = Number(formData.nearest_bus_distance) <= 2 ? 1 : 0
+    data.bus_within_3km = Number(formData.nearest_bus_distance) <= 3 ? 1 : 0
+    data.total_bus_count = Number(formData.nearest_bus_distance) <= 3 ? 1 : 0
+
+    data.avg_train_distance = Number(formData.nearest_train_distance) || 0
+    data.train_within_1km = Number(formData.nearest_train_distance) <= 1 ? 1 : 0
+    data.train_within_2km = Number(formData.nearest_train_distance) <= 2 ? 1 : 0
+    data.train_within_3km = Number(formData.nearest_train_distance) <= 3 ? 1 : 0
+    data.total_train_count = Number(formData.nearest_train_distance) <= 3 ? 1 : 0
+
+    data.avg_airport_distance = Number(formData.nearest_airport_distance) || 0
+    data.airport_within_1km = Number(formData.nearest_airport_distance) <= 1 ? 1 : 0
+    data.airport_within_2km = Number(formData.nearest_airport_distance) <= 2 ? 1 : 0
+    data.airport_within_3km = Number(formData.nearest_airport_distance) <= 3 ? 1 : 0
+    data.total_airport_count = Number(formData.nearest_airport_distance) <= 3 ? 1 : 0
+
+    data.avg_hospital_distance = Number(formData.nearest_hospital_distance) || 0
+    data.hospital_within_1km = Number(formData.nearest_hospital_distance) <= 1 ? 1 : 0
+    data.hospital_within_2km = Number(formData.nearest_hospital_distance) <= 2 ? 1 : 0
+    data.hospital_within_3km = Number(formData.nearest_hospital_distance) <= 3 ? 1 : 0
+    data.total_hospital_count = Number(formData.nearest_hospital_distance) <= 3 ? 1 : 0
+
+    console.log('📊 API Data being sent:', data)
     return data
   }
 
